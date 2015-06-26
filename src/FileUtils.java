@@ -140,14 +140,13 @@ public class FileUtils {
 	public static String formatSeconds(int s) {
 		String string = "";
 
-		System.out.println("Seconds: "+s);
 		int remainder;
 		int days = (int) s / 86400;
 		int hours = (int) (s % 86400)/3600;
 		remainder = s - days*86400 - hours*3600;
 		int mins =(int) remainder / 60;
 		int secs = remainder % 60;
-		System.out.println("Day:"+days+" Hour:"+hours+" Mins:"+mins+" Sex:"+secs);
+
 		if (days > 0)
 			string += days + ":";
 		if (hours > 0)
