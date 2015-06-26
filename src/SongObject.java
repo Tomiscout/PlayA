@@ -4,7 +4,7 @@ public class SongObject {
 	private String name;
 	private String length;
 	
-	public SongObject(String name, int songs, String length){
+	public SongObject(String name, String length){
 		this.name = name;
 		this.length = length;
 	}
