@@ -1,6 +1,5 @@
 import java.util.ArrayList;
 
-
 public class PlaylistController {
 	static ArrayList<String> currentSongs = new ArrayList<String>();
 	static String currentSong;
@@ -9,15 +8,16 @@ public class PlaylistController {
 		
 		String[] songs = PlaylistWriter.readPlaylist(name);
 
-		SongTable st = MainGui.getSongTable();
-		st.tableModel.clear();
 		currentSongs.clear();
+		MainGui.data.clear();
 
 		for (String s : songs) {
-			String path = s.substring(s.lastIndexOf("\\") + 1,
+			String songName = s.substring(s.lastIndexOf("\\") + 1,
 					s.lastIndexOf(".mp3"));
-			st.tableModel.addRow(path, FileUtils.formatSeconds(Integer
-					.parseInt((s.substring(s.lastIndexOf(".mp3") + 5)))));
+			int length = Integer
+					.parseInt((s.substring(s.lastIndexOf(".mp3") + 5)));
+			
+			MainGui.data.add(new SongObject(songName , FileUtils.formatSeconds(length)));
 			currentSongs.add(s.substring(0, s.lastIndexOf(".mp3") + 4));
 		}
 
@@ -46,7 +46,7 @@ public class PlaylistController {
 	}
 
 	public static void playSongFilename(String fn) {
-		PlayerController.play(fn);
+		//PlayerController.play(fn);
 		currentSong = fn;
 	}
 }
