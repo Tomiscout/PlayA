@@ -46,7 +46,9 @@ import javafx.scene.image.ImageView;
 public class PlaylistPane extends VBox {
 
 	TableView table;
-	TreeView treeView;
+	public static ObservableList<PlaylistObject> data = FXCollections.observableArrayList();
+	
+	
 	static ProgressBar bar;
 	static double currentProgress;
 	static double maxProgress;
@@ -54,7 +56,6 @@ public class PlaylistPane extends VBox {
 	static double maxItemProgress;
 
 	static boolean isFinished;
-	public static ObservableList<PlaylistObject> data = FXCollections.observableArrayList();;
 	
 	public PlaylistPane() {
 		BorderPane tablePane = new BorderPane();
@@ -74,7 +75,7 @@ public class PlaylistPane extends VBox {
 		countColumn.setCellValueFactory(new PropertyValueFactory<>("songs"));
 		
 		TableColumn<PlaylistObject, String> timeColumn = new TableColumn("Length");
-		timeColumn.setMaxWidth(700);
+		timeColumn.setMaxWidth(70);
 		timeColumn.setCellValueFactory(new PropertyValueFactory<>("length"));
 
 		table.getColumns().addAll(nameColumn, countColumn, timeColumn);
@@ -85,7 +86,7 @@ public class PlaylistPane extends VBox {
 		    row.setOnMouseClicked(event -> {
 		        if (event.getClickCount() == 2 && (! row.isEmpty()) ) {
 		            PlaylistObject rowData = row.getItem();
-		            PlaylistWriter.readPlaylist(rowData.getName());
+		            PlaylistController.openPlaylist(rowData.getName());
 		        }
 		    });
 		    return row ;
