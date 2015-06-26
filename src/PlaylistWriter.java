@@ -153,6 +153,7 @@ public class PlaylistWriter {
 				BufferedReader br = new BufferedReader(new InputStreamReader(
 						new FileInputStream(tFile), "UTF-8"));
 
+				br.readLine();//Skips .plp header
 				while ((song = br.readLine()) != null) {
 					songs.add(song);
 				}
