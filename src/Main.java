@@ -34,7 +34,7 @@ public class Main extends Application {
 
 //TODO
 
-//song table,buttons,seekbar
+//Use javafx to get metadata
 //more efficient playlist file,  probably. m3u or simmilar
 //next, previous songs
 //shuffle

@@ -46,7 +46,16 @@ public class PlaylistController {
 	}
 
 	public static void playSongFilename(String fn) {
-		//PlayerController.play(fn);
+		System.out.println("Got request "+fn);
+		PlayerController.play(fn);
 		currentSong = fn;
+	}
+	
+	public static String getSongFilepath(String name){
+		for(String s : currentSongs){
+			String truncated = s.substring(0, s.lastIndexOf(".mp3"));
+			if(truncated.endsWith(name)) return s;
+		}
+		return null;
 	}
 }

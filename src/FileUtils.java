@@ -10,6 +10,10 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Map;
 
+import javafx.collections.ObservableList;
+import javafx.scene.media.Media;
+import javafx.scene.media.MediaPlayer;
+
 import javax.sound.sampled.AudioFileFormat;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.UnsupportedAudioFileException;
@@ -18,6 +22,7 @@ import javax.swing.filechooser.FileSystemView;
 
 public class FileUtils {
 
+	private final static Object obj= new Object();
 	static String[] forbiddenSymbols = { "/", "\\", "?", "%", "*", ":", "|",
 			"\"", "<", ">", "." };
 	static String[] forbiddenNames = { "CON", "PRN", "AUX", "CLOCK$", "NUL",
@@ -115,8 +120,10 @@ public class FileUtils {
 
 	// TODO Use javafx or other lib to get metadata.
 	// Uses MP3SPI.
+	static String duration;
 	public static int getSongLength(File file) {
-		;
+
+		/*
 		if (!file.exists())
 			return -2;
 		AudioFileFormat baseFileFormat = null;
@@ -134,7 +141,24 @@ public class FileUtils {
 		Map properties = baseFileFormat.properties();
 		Long microseconds = (Long) properties.get("duration");
 		int sec = (int) (microseconds / 1000000);
-		return sec;
+		*/
+		
+		if (!file.exists()) return -2;
+		
+		final MediaPlayer mp= new MediaPlayer(new Media(file.toURI().toString()));
+	    mp.setOnReady(new Runnable() {
+
+	        @Override
+	        public void run() {
+	            duration=(String) mp.getMedia().getMetadata().get("duration");
+	            synchronized(obj){//this is required since mp.setOnReady creates a new thread and our loopp  in the main thread
+	            	obj.notify();// the loop has to wait unitl we are able to get the media metadata thats why use .wait() and .notify() to synce the two threads(main thread and MediaPlayer thread)
+	            }
+	        }
+	    });
+		
+		System.out.println(duration);
+		return Integer.parseInt(duration);
 	}
 
 	public static String formatSeconds(int s) {
