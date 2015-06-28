@@ -16,7 +16,8 @@ public class Main extends Application {
 	}
 
 	@Override
-	public void start(Stage primaryStage) throws Exception {
+	public void start(Stage primaryStage){
+		try{
 		pStage = primaryStage;
 		MainGui gui = new MainGui();
 
@@ -24,6 +25,9 @@ public class Main extends Application {
 		Scene scene = new Scene(gui, 800, 520);
 		primaryStage.setScene(scene);
 		primaryStage.show();
+		}catch(Exception e){
+			e.printStackTrace();
+		}
 
 	}
 
@@ -34,9 +38,7 @@ public class Main extends Application {
 
 //TODO
 
-//Use javafx to get metadata
 //more efficient playlist file,  probably. m3u or simmilar
-//next, previous songs
 //shuffle
 
 //custom playlist

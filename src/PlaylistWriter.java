@@ -19,6 +19,8 @@ import java.util.Set;
 import javax.swing.SwingUtilities;
 import javax.swing.tree.TreePath;
 
+import javafx.scene.media.Media;
+
 public class PlaylistWriter {
 
 	protected static File workingDir = new File(FileUtils.getWorkDirectory());
@@ -93,7 +95,9 @@ public class PlaylistWriter {
 					}
 
 					for (int o = 0; o < songs.length; o++) {
-						int length = FileUtils.getSongLength(songs[o]);
+						
+						long length = FileUtils.getSongLength(songs[o]);
+						
 						songLengths += length;
 						songCount++;
 						printWriter.println(songs[o].getAbsolutePath() + " "

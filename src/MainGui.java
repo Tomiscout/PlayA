@@ -20,7 +20,7 @@ public class MainGui extends BorderPane {
 	Slider slider;
 	public static ObservableList<SongObject> data = FXCollections
 			.observableArrayList();
-	Label songLabel = null;
+	static Label songLabel = null;
 
 	public MainGui() {
 		
@@ -50,7 +50,7 @@ public class MainGui extends BorderPane {
 					SongObject rowData = row.getItem();
 					PlaylistController.playSongFilename(PlaylistController
 							.getSongFilepath(rowData.getName()));
-					songLabel.setText(rowData.getName());
+					setSongName(rowData.getName());
 				}
 			});
 			return row;
@@ -77,7 +77,7 @@ public class MainGui extends BorderPane {
 
 			PlaylistController.playSongFilename(PlaylistController
 					.getSongFilepath(selected.getName()));
-			songLabel.setText(selected.getName());
+			setSongName(selected.getName());
 		});
 
 		// Pause
@@ -95,13 +95,13 @@ public class MainGui extends BorderPane {
 		// Next
 		Button nextBtn = new Button(">|");
 		nextBtn.setOnAction(e -> {
-
+			PlaylistController.playNextSong();
 		});
 
 		// Previous
 		Button previousBtn = new Button("|<");
 		previousBtn.setOnAction(e -> {
-
+			PlaylistController.playPreviousSong();
 		});
 
 		playerPane.getChildren().addAll(slider, playBtn, pauseBtn, stopBtn,
@@ -128,5 +128,9 @@ public class MainGui extends BorderPane {
 
 		rightPane.getChildren().addAll(playlistPane, controlPane);
 
+	}
+	
+	public static void setSongName(String s){
+		songLabel.setText(s);
 	}
 }

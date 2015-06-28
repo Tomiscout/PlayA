@@ -130,7 +130,13 @@ public class PlaylistPane extends VBox {
 					try {
 						String name = f.getName()
 								.substring(0, f.getName().length() - 4);
-						String length = FileUtils.formatSeconds(Integer.parseInt(FileUtils.getFirstLine(f)));
+						String length;
+						try{
+							length = FileUtils.formatSeconds(Integer.parseInt(FileUtils.getFirstLine(f)));
+						}catch(NumberFormatException e){
+							System.out.println("Bad song length in .plp "+name);
+							length = FileUtils.formatSeconds(0);
+						}
 						data.add(new PlaylistObject(name,
 								FileUtils.countLines(f.getAbsolutePath())-1, length));
 						

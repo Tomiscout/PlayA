@@ -20,9 +20,13 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 import javax.swing.ImageIcon;
 import javax.swing.filechooser.FileSystemView;
 
+import com.mpatric.mp3agic.InvalidDataException;
+import com.mpatric.mp3agic.Mp3File;
+import com.mpatric.mp3agic.UnsupportedTagException;
+
 public class FileUtils {
 
-	private final static Object obj= new Object();
+	public final static Object obj= new Object();
 	static String[] forbiddenSymbols = { "/", "\\", "?", "%", "*", ":", "|",
 			"\"", "<", ">", "." };
 	static String[] forbiddenNames = { "CON", "PRN", "AUX", "CLOCK$", "NUL",
@@ -118,47 +122,16 @@ public class FileUtils {
 		}
 	}
 
-	// TODO Use javafx or other lib to get metadata.
-	// Uses MP3SPI.
-	static String duration;
-	public static int getSongLength(File file) {
-
-		/*
-		if (!file.exists())
-			return -2;
-		AudioFileFormat baseFileFormat = null;
+	public static long getSongLength(File f) {
+		long length = -1;
 		try {
-			baseFileFormat = AudioSystem.getAudioFileFormat(file);
-		} catch (UnsupportedAudioFileException e) {
+			Mp3File mp3file = new Mp3File(f.getAbsolutePath());
+			length = mp3file.getLengthInSeconds();
+		} catch (UnsupportedTagException | InvalidDataException | IOException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
-			return -1;
-		} catch (IOException e) {
-			e.printStackTrace();
-			return -1;
 		}
-
-		@SuppressWarnings("rawtypes")
-		Map properties = baseFileFormat.properties();
-		Long microseconds = (Long) properties.get("duration");
-		int sec = (int) (microseconds / 1000000);
-		*/
-		
-		if (!file.exists()) return -2;
-		
-		final MediaPlayer mp= new MediaPlayer(new Media(file.toURI().toString()));
-	    mp.setOnReady(new Runnable() {
-
-	        @Override
-	        public void run() {
-	            duration=(String) mp.getMedia().getMetadata().get("duration");
-	            synchronized(obj){//this is required since mp.setOnReady creates a new thread and our loopp  in the main thread
-	            	obj.notify();// the loop has to wait unitl we are able to get the media metadata thats why use .wait() and .notify() to synce the two threads(main thread and MediaPlayer thread)
-	            }
-	        }
-	    });
-		
-		System.out.println(duration);
-		return Integer.parseInt(duration);
+		return length;
 	}
 
 	public static String formatSeconds(int s) {
@@ -172,9 +145,9 @@ public class FileUtils {
 		int secs = remainder % 60;
 
 		if (days > 0)
-			string += days + ":";
+			string += days + "d";
 		if (hours > 0)
-			string += hours + ":";
+			string += hours + "h ";
 		
 		if (mins < 10)
 			string += "0" + mins + ":";
