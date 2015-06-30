@@ -9,6 +9,7 @@ import javafx.stage.Stage;
 public class Main extends Application {
 
 	static Stage pStage;
+	static Scene scene;
 	Button button;
 
 	public static void main(String[] args) {
@@ -16,16 +17,16 @@ public class Main extends Application {
 	}
 
 	@Override
-	public void start(Stage primaryStage){
-		try{
-		pStage = primaryStage;
-		MainGui gui = new MainGui();
+	public void start(Stage primaryStage) {
+		try {
+			pStage = primaryStage;
+			MainGui gui = new MainGui();
 
-		primaryStage.setTitle("PlayA");
-		Scene scene = new Scene(gui, 800, 520);
-		primaryStage.setScene(scene);
-		primaryStage.show();
-		}catch(Exception e){
+			primaryStage.setTitle("PlayA");
+			scene = new Scene(gui, 800, 520);
+			primaryStage.setScene(scene);
+			primaryStage.show();
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 
@@ -36,14 +37,14 @@ public class Main extends Application {
 	}
 }
 
-//TODO
+// TODO
 
-//more efficient playlist file,  probably. m3u or simmilar
-//shuffle
+// more efficient playlist file, probably. m3u or simmilar
+// shuffle
 
-//custom playlist
-//Work on css
-//downloading from yt
-//drag'n'drop
+// custom playlist
+// Work on css
+// downloading from yt
+// drag'n'drop
 
-//layouts http://docs.oracle.com/javafx/2/layout/builtin_layouts.htm
+// layouts http://docs.oracle.com/javafx/2/layout/builtin_layouts.htm

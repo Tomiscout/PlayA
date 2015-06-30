@@ -59,6 +59,8 @@ public class PlaylistController {
 	public static void playSongFilename(String fn) {
 		PlayerController.play(fn);
 		currentSong = fn;
+		String name = fn.substring(fn.lastIndexOf("\\")+1,fn.lastIndexOf(".mp3"));
+		MainGui.songLabel.setText(name);
 	}
 
 	public static String getSongFilepath(String name) {

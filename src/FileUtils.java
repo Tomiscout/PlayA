@@ -136,7 +136,9 @@ public class FileUtils {
 
 	public static String formatSeconds(int s) {
 		String string = "";
-
+		
+		if(s<1) return "00:00";
+		
 		int remainder;
 		int days = (int) s / 86400;
 		int hours = (int) (s % 86400)/3600;

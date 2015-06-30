@@ -1,10 +1,14 @@
 import java.io.File;
 
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
+import javafx.util.Duration;
 
 public class FXMediaPlayer {
 
+	private static double Volume = 1.0;
 	static MediaPlayer player;
 	static boolean isPaused = false;
 
@@ -22,7 +26,22 @@ public class FXMediaPlayer {
 
 			Media media = new Media(song.toURI().toString());
 			player = new MediaPlayer(media);
+			player.currentTimeProperty().addListener(new ChangeListener<Duration>() {
+				public void changed(ObservableValue<? extends Duration> observable, Duration duration,
+						Duration currentDuration) {
+					MainGui.setSeekValue(currentDuration.toSeconds());
+				}
+
+			});
+			player.setOnReady(() -> {
+				MainGui.seekBar.setMax(player.getTotalDuration().toSeconds());
+			});
+			player.setOnEndOfMedia(() -> {
+				PlaylistController.playNextSong();
+				});
+			player.setVolume(Volume);
 			player.play();
+
 		}
 	}
 
@@ -38,9 +57,9 @@ public class FXMediaPlayer {
 		}
 	}
 
-	public static void seekAt(int i) {
+	public static void seek(double d) {
 		if (player != null) {
-
+			player.seek(Duration.seconds(d));
 		}
 	}
 
@@ -49,4 +68,14 @@ public class FXMediaPlayer {
 			player.dispose();
 	}
 
+	public static boolean isNull() {
+		return player == null;
+	}
+
+	public static void setVolume(double d) {
+		Volume = d;
+		if (!isNull()) {
+			player.setVolume(d);
+		}
+	}
 }
