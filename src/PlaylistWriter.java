@@ -94,13 +94,14 @@ public class PlaylistWriter {
 						PlaylistPane.setProgressBarItemMax(songs.length);
 					}
 
+					printWriter.println("¥dir:"+path.toString());
 					for (int o = 0; o < songs.length; o++) {
 						
 						long length = FileUtils.getSongLength(songs[o]);
 						
 						songLengths += length;
 						songCount++;
-						printWriter.println(songs[o].getAbsolutePath() + " "
+						printWriter.println(songs[o].getName() + " "
 								+ length);
 						PlaylistPane.setProgressBarItemValue(o);
 					}
@@ -157,9 +158,17 @@ public class PlaylistWriter {
 				BufferedReader br = new BufferedReader(new InputStreamReader(
 						new FileInputStream(tFile), "UTF-8"));
 
+				String currentDir = "";
 				br.readLine();//Skips .plp header
 				while ((song = br.readLine()) != null) {
-					songs.add(song);
+					if(song.startsWith("¥dir:")){
+						currentDir = song.substring(5);
+						continue;
+					}
+					if(!currentDir.isEmpty()){
+						songs.add(currentDir+"\\"+song);
+					}
+					
 				}
 
 				br.close();
