@@ -6,6 +6,7 @@ import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Slider;
@@ -14,12 +15,14 @@ import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
+import javafx.scene.text.Text;
 
-public class MainGui extends BorderPane {
+public class MainGui extends HBox {
 
 	TableView<SongObject> table;
 	static Slider seekBar;
@@ -32,17 +35,21 @@ public class MainGui extends BorderPane {
 
 		// TableView
 		table = new TableView();
+		table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+		table.setPrefHeight(4068);
+		table.setPrefWidth(4068);
 		table.setEditable(false);
 		table.setItems(data);
 
 		// TableColumns
 		TableColumn<SongObject, String> nameColumn = new TableColumn("Name");
-		nameColumn.setPrefWidth(459);
+		nameColumn.setPrefWidth(380);
+		nameColumn.setMinWidth(160);
 		nameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
 
 		TableColumn<SongObject, String> lengthColumn = new TableColumn("Length");
 		lengthColumn.setMaxWidth(69);
-		lengthColumn.setPrefWidth(69);
+		lengthColumn.setMinWidth(48);
 		lengthColumn.setCellValueFactory(new PropertyValueFactory<>("length"));
 
 		table.getColumns().addAll(nameColumn, lengthColumn);
@@ -61,19 +68,30 @@ public class MainGui extends BorderPane {
 		});
 
 		// Adds center pane
-		BorderPane centerPane = new BorderPane();
-		setCenter(centerPane);
+		VBox centerPane = new VBox();
+		centerPane.setMaxHeight(Double.MAX_VALUE);
+		centerPane.setSpacing(4);
 
 		// Adds song pane
-		StackPane songPane = new StackPane();
-		songPane.getChildren().add(table);
-		centerPane.setCenter(songPane);
+		BorderPane songPane = new BorderPane();
+		songPane.setCenter(table);
 
 		// Ads right pane
 		VBox rightPane = new VBox();
-		centerPane.setRight(rightPane);
 
 		VBox topPane = new VBox();
+
+		GridPane optionPane = new GridPane();
+
+		// Playing options
+		ObservableList<String> options = FXCollections.observableArrayList("Normal", "Shuffle");
+		final ComboBox comboBox = new ComboBox(options);
+		comboBox.setValue("Normal");
+		comboBox.valueProperty().addListener((ov, s, s1) -> {
+			PlaylistController.setPlayingMode((String) s1);
+		});
+		optionPane.add(new Text("Playing mode "), 0, 0);
+		optionPane.add(comboBox, 1, 0);
 
 		songLabel = new Label("Sng name");
 		songLabel.setFont(new Font("Impact", 18));
@@ -101,7 +119,7 @@ public class MainGui extends BorderPane {
 		Slider volumeBar = new Slider();
 		volumeBar.setMax(1);
 		volumeBar.setValue(1);
-		volumeBar.setPrefWidth(90);
+		volumeBar.setPrefWidth(100);
 		volumeBar.valueProperty().addListener(e -> {
 			FXMediaPlayer.setVolume(volumeBar.getValue());
 		});
@@ -144,19 +162,18 @@ public class MainGui extends BorderPane {
 
 		//
 		Button shrinkBtn = new Button("卍");
-		shrinkBtn.setFont(new Font("Arial", 16));
 		shrinkBtn.setOnAction(e -> {
 			rightPane.setManaged(isShrinked);
 			rightPane.setVisible(isShrinked);
 
-			if(isShrinked){
+			if (isShrinked) {
 				shrinkBtn.setText("卍");
-				Main.pStage.setWidth(Main.pStage.getWidth()+rightPane.getWidth());
-			}else{
+				Main.pStage.setWidth(Main.pStage.getWidth() + rightPane.getWidth());
+			} else {
 				shrinkBtn.setText("☭");
-				Main.pStage.setWidth(Main.pStage.getWidth()-rightPane.getWidth());
+				Main.pStage.setWidth(Main.pStage.getWidth() - rightPane.getWidth());
 			}
-			
+
 			isShrinked = !isShrinked;
 		});
 
@@ -164,13 +181,15 @@ public class MainGui extends BorderPane {
 				shrinkBtn);
 
 		topPane.getChildren().addAll(songLabel, playerPane);
-		setTop(topPane);
+
+		centerPane.getChildren().addAll(topPane, songPane);
 
 		PlaylistPane playlistPane = new PlaylistPane();
 		ScrollPane controlPane = new ScrollPane();
 
-		rightPane.getChildren().addAll(playlistPane, controlPane);
+		rightPane.getChildren().addAll(playlistPane, optionPane);
 
+		getChildren().addAll(centerPane, rightPane);
 	}
 
 	public static void setSongName(String s) {

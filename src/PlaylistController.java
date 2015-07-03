@@ -1,9 +1,11 @@
 import java.util.ArrayList;
+import java.util.Random;
 
 public class PlaylistController {
 	static ArrayList<String> currentSongs = new ArrayList<String>();
 	static ArrayList<String> previousSongs = new ArrayList<>();
 	static String currentSong;
+	static String playingMode = "";
 
 	public static void openPlaylist(String name) {
 
@@ -30,20 +32,54 @@ public class PlaylistController {
 		if (currentSong == null)
 			return;
 
-		for (int i = 0; i < currentSongs.size(); i++) {
-			if (currentSongs.get(i).equals(currentSong)) {
-				if (i == currentSongs.size() - 1) {
-					previousSongs.add(currentSong);
-					playSongFilename(currentSongs.get(0));
-					return;
-				} else {
-					previousSongs.add(currentSong);
-					playSongFilename(currentSongs.get(i + 1));
-					return;
+		if(playingMode.equals("Shuffle")){
+			int randomSong;
+			Random rand = new Random();
+			int randomNum;
+			boolean isSame=false;
+				if(currentSongs.size()>5){
+					if(!previousSongs.isEmpty())
+						do{
+							randomNum = rand.nextInt(currentSongs.size());
+							
+							int previousLoop=0;
+							if(previousSongs.size()>4) previousLoop = previousSongs.size()-1;
+							for(int i = previousSongs.size()-1; i>=previousLoop; i--){
+								if(previousSongs.get(i).equals(currentSongs.get(randomNum))){
+									isSame = true;
+									break;
+								}
+							}
+						}
+						while(isSame);
+					else{
+						randomNum = rand.nextInt(currentSongs.size());
+					}
+					String song = currentSongs.get(randomNum);
+					previousSongs.add(song);	
+					playSongFilename(song);
+				}else{
+					
+				}
+			
+		}
+		else
+		{
+			for (int i = 0; i < currentSongs.size(); i++) {
+				if (currentSongs.get(i).equals(currentSong)) {
+					if (i == currentSongs.size() - 1) {
+						previousSongs.add(currentSong);
+						playSongFilename(currentSongs.get(0));
+						return;
+					} else {
+						previousSongs.add(currentSong);
+						playSongFilename(currentSongs.get(i + 1));
+						return;
+					}
 				}
 			}
+			playSongFilename(currentSongs.get(0));
 		}
-		playSongFilename(currentSongs.get(0));
 	}
 
 	public static void playPreviousSong() {
@@ -59,7 +95,7 @@ public class PlaylistController {
 	public static void playSongFilename(String fn) {
 		PlayerController.play(fn);
 		currentSong = fn;
-		String name = fn.substring(fn.lastIndexOf("\\")+1,fn.lastIndexOf(".mp3"));
+		String name = fn.substring(fn.lastIndexOf("\\") + 1, fn.lastIndexOf(".mp3"));
 		MainGui.songLabel.setText(name);
 	}
 
@@ -71,4 +107,9 @@ public class PlaylistController {
 		}
 		return null;
 	}
+
+	public static void setPlayingMode(String s) {
+		playingMode = s;
+	}
+
 }
