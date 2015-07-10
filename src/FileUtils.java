@@ -100,6 +100,7 @@ public class FileUtils {
 		}
 	}
 
+	//TODO fix header and folder header issues
 	// Credit to 'martinus' @Stackoverflow
 	public static int countLines(String filename) throws IOException {
 		InputStream is = new BufferedInputStream(new FileInputStream(filename));
@@ -110,6 +111,7 @@ public class FileUtils {
 			boolean empty = true;
 			while ((readChars = is.read(c)) != -1) {
 				empty = false;
+
 				for (int i = 0; i < readChars; ++i) {
 					if (c[i] == '\n') {
 						++count;

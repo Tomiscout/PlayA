@@ -5,6 +5,7 @@ import javafx.beans.Observable;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
@@ -31,6 +32,9 @@ public class MainGui extends HBox {
 	private static boolean isSeeking = false;
 	private boolean isShrinked = false;
 
+	/**
+	 * 
+	 */
 	public MainGui() {
 
 		// TableView
@@ -127,13 +131,16 @@ public class MainGui extends HBox {
 		// Play
 		Button playBtn = new Button(">");
 		playBtn.setOnAction(e -> {
+			if(PlaylistController.currentSong == null){
 			SongObject selected = table.getSelectionModel().getSelectedItem();
 
 			if (selected == null)
 				return;
 
 			PlaylistController.playSongFilename(PlaylistController.getSongFilepath(selected.getName()));
-			setSongName(selected.getName());
+			}else{
+				PlayerController.play(PlaylistController.currentSong);
+			}
 		});
 
 		// Pause
@@ -149,13 +156,13 @@ public class MainGui extends HBox {
 		});
 
 		// Next
-		Button nextBtn = new Button(">|");
+		Button nextBtn = new Button(">>");
 		nextBtn.setOnAction(e -> {
 			PlaylistController.playNextSong();
 		});
 
 		// Previous
-		Button previousBtn = new Button("|<");
+		Button previousBtn = new Button("<<");
 		previousBtn.setOnAction(e -> {
 			PlaylistController.playPreviousSong();
 		});
@@ -187,6 +194,7 @@ public class MainGui extends HBox {
 		PlaylistPane playlistPane = new PlaylistPane();
 		ScrollPane controlPane = new ScrollPane();
 
+		optionPane.setPadding(new Insets(4,0,0,10));
 		rightPane.getChildren().addAll(playlistPane, optionPane);
 
 		getChildren().addAll(centerPane, rightPane);

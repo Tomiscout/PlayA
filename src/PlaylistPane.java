@@ -75,7 +75,7 @@ public class PlaylistPane extends VBox {
 		TableColumn<PlaylistObject, String> nameColumn = new TableColumn("Name");
 		nameColumn.setMaxWidth(230);
 		nameColumn.setMinWidth(80);
-		nameColumn.setPrefWidth(150);
+		nameColumn.setPrefWidth(138);
 		nameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
 
 		TableColumn<PlaylistObject, Integer> countColumn = new TableColumn("Songs");
@@ -109,25 +109,27 @@ public class PlaylistPane extends VBox {
 		disableProgressBar();
 
 		BorderPane topPane = new BorderPane();
-		
-			// Buttons
-			Button newPlaylist = new Button("New");
-			Button customPlaylist = new Button("Custom");
-			Button delPlaylist = new Button("Delete");
 
-			newPlaylist.setOnAction(e -> {
-				displayChooser();
+		// Buttons
+		Button newPlaylist = new Button("New");
+		Button customPlaylist = new Button("Custom");
+		Button delPlaylist = new Button("Delete");
 
-			});
-			customPlaylist.setOnAction(e -> System.out.println("Custom playlist"));
+		newPlaylist.setOnAction(e -> {
+			displayChooser();
 
-			delPlaylist.setOnAction(e -> {
-				Alert alert = new Alert(AlertType.CONFIRMATION);
-				alert.setTitle("Playlist deletion");
-				alert.setHeaderText("Are you sure?");
-				PlaylistObject po = (PlaylistObject) table.getSelectionModel().getSelectedItem();
-				
-				if(po != null){
+		});
+		customPlaylist.setOnAction(e -> {
+			displayCustomFactory();
+		});
+
+		delPlaylist.setOnAction(e -> {
+			Alert alert = new Alert(AlertType.CONFIRMATION);
+			alert.setTitle("Playlist deletion");
+			alert.setHeaderText("Are you sure?");
+			PlaylistObject po = (PlaylistObject) table.getSelectionModel().getSelectedItem();
+
+			if (po != null) {
 				String s = po.getName();
 				alert.setContentText("Do you want to delete playlist " + s + "?");
 
@@ -152,16 +154,16 @@ public class PlaylistPane extends VBox {
 					data.remove(po);// Deleting from the table
 				}
 			}
-			});
+		});
 
-			HBox bottomButtons = new HBox();
-			bottomButtons.getChildren().addAll(newPlaylist, customPlaylist, delPlaylist);
-			topPane.setBottom(bottomButtons);
-		
+		HBox bottomButtons = new HBox();
+		bottomButtons.getChildren().addAll(newPlaylist, customPlaylist, delPlaylist);
+		topPane.setBottom(bottomButtons);
+
 		newPlaylist.setPrefWidth(buttonWidth);
 		customPlaylist.setPrefWidth(buttonWidth);
 		delPlaylist.setPrefWidth(buttonWidth);
-		
+
 		setSpacing(5);
 		setPadding(new Insets(10, 0, 0, 10));
 		getChildren().addAll(topPane, tablePane);
@@ -172,12 +174,9 @@ public class PlaylistPane extends VBox {
 			try {
 				String name = f.getName().substring(0, f.getName().length() - 4);
 				String length;
-				try {
-					length = FileUtils.formatSeconds(Integer.parseInt(FileUtils.getFirstLine(f)));
-				} catch (NumberFormatException e) {
-					System.out.println("Bad song length in .plp " + name);
-					length = FileUtils.formatSeconds(0);
-				}
+				
+				length = FileUtils.formatSeconds(PlaylistWriter.getPlaylistLength(f));
+
 				data.add(new PlaylistObject(name, FileUtils.countLines(f.getAbsolutePath()) - 1, length));
 
 				System.out.println("Added playlist " + f.getName());
@@ -187,6 +186,20 @@ public class PlaylistPane extends VBox {
 		}
 	}
 
+	//Opens custom playlist factory window
+	private void displayCustomFactory(){
+		Stage window = new Stage();
+		window.initModality(Modality.APPLICATION_MODAL);
+		window.setTitle("Create a custom playlist");
+		window.setWidth(260);
+		window.setHeight(390);
+		window.setResizable(false);
+		
+		Scene scene = new Scene(new CustomPlaylistPane());
+		window.setScene(scene);
+		window.showAndWait();
+	}
+	
 	// Opens Playlist folder chooser (JTree in SwingNode)
 	private void displayChooser() {
 		Stage window = new Stage();

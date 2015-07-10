@@ -1,3 +1,5 @@
+import java.util.ArrayList;
+
 import javafx.application.Application;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -29,7 +31,9 @@ public class Main extends Application {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-
+		
+		
+		
 	}
 
 	public static Stage getPrimaryStage() {
@@ -39,12 +43,9 @@ public class Main extends Application {
 
 // TODO
 
-// more efficient playlist file, probably. m3u or simmilar
-// shuffle
-
-// custom playlist
-// Work on css
+// music visual canvas
 // downloading from yt
 // drag'n'drop
+// song ratios
 
 // layouts http://docs.oracle.com/javafx/2/layout/builtin_layouts.htm

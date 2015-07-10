@@ -14,12 +14,14 @@ public class PlaylistController {
 		currentSongs.clear();
 		MainGui.data.clear();
 
-		for (String s : songs) {
-			String songName = s.substring(s.lastIndexOf("\\") + 1, s.lastIndexOf(".mp3"));
-			int length = Integer.parseInt((s.substring(s.lastIndexOf(".mp3") + 5)));
+		//Skips file header
+		for (int i = 1; i < songs.length; i++) {
+			String fullName = songs[i];
+			String songName = fullName.substring(fullName.lastIndexOf("\\") + 1, fullName.lastIndexOf(".mp3"));
+			int length = Integer.parseInt((fullName.substring(fullName.lastIndexOf(".mp3") + 5)));
 
 			MainGui.data.add(new SongObject(songName, FileUtils.formatSeconds(length)));
-			currentSongs.add(s.substring(0, s.lastIndexOf(".mp3") + 4));
+			currentSongs.add(fullName.substring(0, fullName.lastIndexOf(".mp3") + 4));
 		}
 
 	}
@@ -88,15 +90,21 @@ public class PlaylistController {
 
 		int prevSong = previousSongs.size() - 1;
 		currentSong = previousSongs.get(prevSong);
-		previousSongs.remove(prevSong);
-		PlayerController.play(currentSong);
+
+		if(currentSong != null){
+			previousSongs.remove(prevSong);
+			PlayerController.play(currentSong);
+			String name = currentSong.substring(currentSong.lastIndexOf("\\") + 1, currentSong.lastIndexOf(".mp3"));
+			MainGui.setSongName(name);
+		}
 	}
 
 	public static void playSongFilename(String fn) {
 		PlayerController.play(fn);
+		if(currentSong != null) previousSongs.add(currentSong);
 		currentSong = fn;
 		String name = fn.substring(fn.lastIndexOf("\\") + 1, fn.lastIndexOf(".mp3"));
-		MainGui.songLabel.setText(name);
+		MainGui.setSongName(name);
 	}
 
 	public static String getSongFilepath(String name) {
