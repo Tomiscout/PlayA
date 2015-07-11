@@ -1,3 +1,5 @@
+import java.util.ArrayList;
+
 import javax.swing.event.ChangeListener;
 
 import javafx.beans.InvalidationListener;
@@ -6,6 +8,11 @@ import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.CacheHint;
+import javafx.scene.Group;
+import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
@@ -20,6 +27,9 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Line;
+import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 
@@ -31,12 +41,21 @@ public class MainGui extends HBox {
 	static Label songLabel = null;
 	private static boolean isSeeking = false;
 	private boolean isShrinked = false;
+	
+	static BorderPane spectrumPane;
+	StackPane glassTableView;
+	private static Group spectrum;
+	private static int cones = 128;
+	private static int gap = 1;
+	private static double coneWidth;
+	private static ArrayList<Line> r = new ArrayList<Line>();
 
 	/**
 	 * 
 	 */
 	public MainGui() {
-
+		
+		getStylesheets().add("MainTheme.css");
 		// TableView
 		table = new TableView();
 		table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
@@ -75,10 +94,6 @@ public class MainGui extends HBox {
 		VBox centerPane = new VBox();
 		centerPane.setMaxHeight(Double.MAX_VALUE);
 		centerPane.setSpacing(4);
-
-		// Adds song pane
-		BorderPane songPane = new BorderPane();
-		songPane.setCenter(table);
 
 		// Ads right pane
 		VBox rightPane = new VBox();
@@ -184,13 +199,43 @@ public class MainGui extends HBox {
 			isShrinked = !isShrinked;
 		});
 
+
+		// Adds spectrum canvas	
+		spectrum = new Group();
+		coneWidth = 2;
+		
+		spectrumPane = new BorderPane();
+		spectrumPane.setPrefHeight(64);
+		spectrumPane.setMinHeight(64);
+		spectrumPane.setBottom(spectrum);
+		
+		glassTableView = new StackPane();
+		glassTableView.getStylesheets().add("TransparentTableView.css");
+		Label tla = new Label("Sdsfdsfsdfsdf");
+	    StackPane.setAlignment(table, Pos.BOTTOM_CENTER);
+	    glassTableView.getChildren().addAll(table);
+
+		StackPane stackedCenterPane = new StackPane();
+		stackedCenterPane.getChildren().add(spectrumPane);
+		stackedCenterPane.getChildren().add(glassTableView);
+		
 		playerPane.getChildren().addAll(playBtn, pauseBtn, stopBtn, nextBtn, previousBtn, seekBar, volumeBar,
 				shrinkBtn);
 
 		topPane.getChildren().addAll(songLabel, playerPane);
 
-		centerPane.getChildren().addAll(topPane, songPane);
+		centerPane.getChildren().addAll(topPane, stackedCenterPane);
 
+		for (int i = 0; i < 128; i++) {
+			Line l = new Line();
+			l.setStartY(spectrumPane.getHeight());
+			l.setEndY(0);
+			l.setStartX(i*coneWidth+i*gap);
+			l.setEndX(i*coneWidth+i*gap);
+			r.add(l);
+		}
+		spectrum.getChildren().addAll(r);
+		
 		PlaylistPane playlistPane = new PlaylistPane();
 		ScrollPane controlPane = new ScrollPane();
 
@@ -207,5 +252,13 @@ public class MainGui extends HBox {
 	public static void setSeekValue(double d) {
 		if (!isSeeking)
 			seekBar.setValue(d);
+	}
+	
+	public static void updateMagnitudes(float[] mag){
+		
+		for (int i = 0; i < mag.length; i++) {
+			r.get(i).setEndY(-mag[i]-spectrumPane.getHeight());
+			r.get(i).setStartY(36);
+		}
 	}
 }

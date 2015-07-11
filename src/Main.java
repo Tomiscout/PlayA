@@ -1,5 +1,6 @@
 import java.util.ArrayList;
 
+import javafx.animation.AnimationTimer;
 import javafx.application.Application;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -13,6 +14,10 @@ public class Main extends Application {
 	static Stage pStage;
 	static Scene scene;
 	Button button;
+
+	private final long[] frameTimes = new long[100];
+    private int frameTimeIndex = 0 ;
+    private boolean arrayFilled = false ;
 
 	public static void main(String[] args) {
 		launch(args);

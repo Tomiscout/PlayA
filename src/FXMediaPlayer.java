@@ -2,6 +2,7 @@ import java.io.File;
 
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
+import javafx.scene.media.AudioSpectrumListener;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import javafx.util.Duration;
@@ -39,6 +40,15 @@ public class FXMediaPlayer {
 			player.setOnEndOfMedia(() -> {
 				PlaylistController.playNextSong();
 				});
+			
+			//AudioSpectrum
+			player.setAudioSpectrumListener((timestamp, duration, magnitudes, phases) -> {
+				MainGui.updateMagnitudes(magnitudes);
+			});
+			player.setAudioSpectrumInterval(0.0166);
+			player.setAudioSpectrumNumBands(128);
+			player.setAudioSpectrumThreshold(-100);
+			
 			player.setVolume(Volume);
 			player.play();
 

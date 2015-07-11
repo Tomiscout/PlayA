@@ -1,0 +1,46 @@
+
+.root{
+	-fx-base: #5A8DC3;
+    -fx-background: #225C98;
+}
+
+.table-view{
+   -fx-background-color:#3B70A8;
+-fx-background: #3B70A8;
+-fx-text-fill: black;
+}
+.table-row-cell:focused{
+	-fx-background: rgb(0.0, 100.0, 100.0);
+	-fx-text-fill: rgb(200, 200, 200);
+}
+/* Selected row */
+.table-view:focused .table-row-cell:filled:focused:selected {
+    -fx-background-color: #216BB7;
+    -fx-background-insets: 0.0, 1.0, 2.0;
+    -fx-background: -fx-accent;
+    -fx-text-fill: white;
+}
+
+
+/* Row hovered */
+.table-view:row-selection .table-row-cell:filled:hover {
+    -fx-background-color: #82ADDA;
+    -fx-background-insets: 0.0, 0.0 0.0 1.0 0.0;
+    -fx-text-fill: white;
+}
+
+/* Selected row hovered */
+.table-view:focused .table-row-cell:filled:focused:selected:hover {
+    -fx-text-fill: white;
+}
+
+/* Selected row when table not focused */
+.table-row-cell:filled:focused:selected {
+    -fx-background-color: #216BB7;
+    -fx-background-insets: 0.0, 1.0, 2.0;
+    -fx-background: -fx-accent;
+    -fx-text-fill: white;
+}
+
+.table-row-cell:empty             { -fx-background-color: #3B70A8;}
+.table-row-cell:empty .table-cell { -fx-border-width: 0.0px;}
