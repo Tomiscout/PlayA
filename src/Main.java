@@ -1,12 +1,7 @@
-import java.util.ArrayList;
-
-import javafx.animation.AnimationTimer;
 import javafx.application.Application;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
-import javafx.scene.layout.StackPane;
+import javafx.scene.image.Image;
 import javafx.stage.Stage;
 
 public class Main extends Application {
@@ -14,10 +9,6 @@ public class Main extends Application {
 	static Stage pStage;
 	static Scene scene;
 	Button button;
-
-	private final long[] frameTimes = new long[100];
-    private int frameTimeIndex = 0 ;
-    private boolean arrayFilled = false ;
 
 	public static void main(String[] args) {
 		launch(args);
@@ -30,7 +21,8 @@ public class Main extends Application {
 			MainGui gui = new MainGui();
 
 			primaryStage.setTitle("PlayA");
-			scene = new Scene(gui, 800, 520);
+			primaryStage.getIcons().add(new Image(Main.class.getResourceAsStream("Icon.png")));
+			scene = new Scene(gui, 800, 530);
 			primaryStage.setScene(scene);
 			primaryStage.show();
 		} catch (Exception e) {
@@ -48,9 +40,6 @@ public class Main extends Application {
 
 // TODO
 
-// music visual canvas
 // downloading from yt
 // drag'n'drop
 // song ratios
-
-// layouts http://docs.oracle.com/javafx/2/layout/builtin_layouts.htm

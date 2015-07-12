@@ -8,8 +8,6 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.io.FileWriter;
-import java.io.Writer;
-import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -19,10 +17,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
-import javax.swing.SwingUtilities;
 import javax.swing.tree.TreePath;
 
-import javafx.scene.media.Media;
 
 public class PlaylistWriter {
 

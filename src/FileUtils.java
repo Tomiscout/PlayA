@@ -1,22 +1,11 @@
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Map;
-
-import javafx.collections.ObservableList;
-import javafx.scene.media.Media;
-import javafx.scene.media.MediaPlayer;
-
-import javax.sound.sampled.AudioFileFormat;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.UnsupportedAudioFileException;
 import javax.swing.ImageIcon;
 import javax.swing.filechooser.FileSystemView;
 
@@ -26,17 +15,13 @@ import com.mpatric.mp3agic.UnsupportedTagException;
 
 public class FileUtils {
 
-	public final static Object obj= new Object();
-	static String[] forbiddenSymbols = { "/", "\\", "?", "%", "*", ":", "|",
-			"\"", "<", ">", "." };
-	static String[] forbiddenNames = { "CON", "PRN", "AUX", "CLOCK$", "NUL",
-			"COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8",
-			"COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7",
-			"LPT8", "LPT9", };
+	public final static Object obj = new Object();
+	static String[] forbiddenSymbols = { "/", "\\", "?", "%", "*", ":", "|", "\"", "<", ">", "." };
+	static String[] forbiddenNames = { "CON", "PRN", "AUX", "CLOCK$", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5",
+			"COM6", "COM7", "COM8", "COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9", };
 	static ImageIcon[] rootIcons = new ImageIcon[2];
 	static FileSystemView fsv = FileSystemView.getFileSystemView();
-	private static String workingDir = System.getenv("APPDATA")
-			+ "\\Tomiscout\\PlayA\\";
+	private static String workingDir = System.getenv("APPDATA") + "\\Tomiscout\\PlayA\\";
 
 	public static String getWorkDirectory() {
 		return workingDir;
@@ -100,28 +85,27 @@ public class FileUtils {
 		}
 	}
 
-	//TODO fix header and folder header issues
+	// TODO fix header and folder header issues
 	// Credit to 'martinus' @Stackoverflow
-	public static int countLines(String filename) throws IOException {
-		InputStream is = new BufferedInputStream(new FileInputStream(filename));
-		try {
-			byte[] c = new byte[1024];
-			int count = 0;
-			int readChars = 0;
-			boolean empty = true;
-			while ((readChars = is.read(c)) != -1) {
-				empty = false;
-
-				for (int i = 0; i < readChars; ++i) {
-					if (c[i] == '\n') {
-						++count;
+	public static int countLines(File f) throws IOException {
+		if (f.exists())
+			try {
+				// Reads in UTF-8
+				BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(f), "UTF-8"));
+				int count=0;
+				String song;
+				while ((song = br.readLine()) != null) {
+					if(!song.startsWith(PlaylistWriter.PLAYLISTHEADER)){
+						count++;
 					}
 				}
+
+				br.close();
+				return count-1;
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
-			return (count == 0 && !empty) ? 1 : count;
-		} finally {
-			is.close();
-		}
+		return -1;
 	}
 
 	public static long getSongLength(File f) {
@@ -138,26 +122,27 @@ public class FileUtils {
 
 	public static String formatSeconds(int s) {
 		String string = "";
-		
-		if(s<1) return "00:00";
-		
+
+		if (s < 1)
+			return "00:00";
+
 		int remainder;
 		int days = (int) s / 86400;
-		int hours = (int) (s % 86400)/3600;
-		remainder = s - days*86400 - hours*3600;
-		int mins =(int) remainder / 60;
+		int hours = (int) (s % 86400) / 3600;
+		remainder = s - days * 86400 - hours * 3600;
+		int mins = (int) remainder / 60;
 		int secs = remainder % 60;
 
 		if (days > 0)
 			string += days + "d";
 		if (hours > 0)
 			string += hours + "h ";
-		
+
 		if (mins < 10)
 			string += "0" + mins + ":";
 		else
 			string += mins + ":";
-		
+
 		if (secs < 10)
 			string += "0" + secs;
 		else
@@ -169,8 +154,7 @@ public class FileUtils {
 	public static Path[] getSubFolders(Path path) {
 		ArrayList<Path> paths = new ArrayList<Path>();
 		try {
-			Files.walk(path).filter(Files::isDirectory)
-					.forEach(e -> paths.add(e));
+			Files.walk(path).filter(Files::isDirectory).forEach(e -> paths.add(e));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -188,20 +172,18 @@ public class FileUtils {
 				subFolders.add(c);
 			}
 		}
-		Path[] subFoldersArray = subFolders
-				.toArray(new Path[subFolders.size()]);
+		Path[] subFoldersArray = subFolders.toArray(new Path[subFolders.size()]);
 		return subFoldersArray;
 	}
 
 	public static String getFirstLine(File f) {
 		String line;
-		try{
-			BufferedReader br = new BufferedReader(new InputStreamReader(
-				new FileInputStream(f), "UTF-8"));
-			
+		try {
+			BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(f), "UTF-8"));
+
 			line = br.readLine();
 			br.close();
-		}catch(IOException ioe){
+		} catch (IOException ioe) {
 			return "";
 		}
 		return line;

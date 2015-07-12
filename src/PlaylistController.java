@@ -35,7 +35,6 @@ public class PlaylistController {
 			return;
 
 		if(playingMode.equals("Shuffle")){
-			int randomSong;
 			Random rand = new Random();
 			int randomNum;
 			boolean isSame=false;

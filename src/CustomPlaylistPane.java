@@ -1,7 +1,6 @@
 import java.util.ArrayList;
 import java.util.Optional;
 
-import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.control.Button;
 import javafx.scene.control.SelectionMode;
@@ -12,12 +11,14 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 
-public class CustomPlaylistPane extends BorderPane{
-	
+@SuppressWarnings({ "rawtypes", "unchecked" })
+public class CustomPlaylistPane extends BorderPane {
+
+
 	TableView table;
-	//public static ObservableList<PlaylistObject> data = FXCollections.observableArrayList();
 
 	public CustomPlaylistPane() {
+		getStylesheets().add("MainTheme.css");
 		table = new TableView();
 		table.setEditable(false);
 		table.setItems(PlaylistPane.data);
@@ -29,7 +30,7 @@ public class CustomPlaylistPane extends BorderPane{
 		TableColumn<PlaylistObject, Boolean> selectedColumn = new TableColumn("");
 		selectedColumn.setResizable(false);
 		selectedColumn.setCellValueFactory(new PropertyValueFactory<>("selected"));
-		
+
 		TableColumn<PlaylistObject, String> nameColumn = new TableColumn("Name");
 		nameColumn.setMaxWidth(230);
 		nameColumn.setMinWidth(80);
@@ -48,9 +49,8 @@ public class CustomPlaylistPane extends BorderPane{
 
 		table.getColumns().addAll(nameColumn, countColumn, timeColumn);
 
-		
 		HBox buttonPanel = new HBox();
-		
+
 		Button createBtn = new Button("Create");
 		createBtn.setOnAction(e -> {
 			TextInputDialog dialog = new TextInputDialog();
@@ -74,19 +74,21 @@ public class CustomPlaylistPane extends BorderPane{
 				String name = result.get();
 				ObservableList<PlaylistObject> selected = table.getSelectionModel().getSelectedItems();
 				ArrayList<String> selectedNames = new ArrayList<String>();
-				for(PlaylistObject po : selected){
+				for (PlaylistObject po : selected) {
 					selectedNames.add(po.getName());
 				}
 				String[] selectedNamesArray = selectedNames.toArray(new String[selectedNames.size()]);
-				
+
 				PlaylistWriter.createCustomPlaylist(name, selectedNamesArray);
 			}
 		});
+
+		Button downloadBtn = new Button("Download");
 		buttonPanel.getChildren().add(createBtn);
-		
+		buttonPanel.getChildren().add(downloadBtn);
+
 		setTop(buttonPanel);
 		setCenter(table);
 	}
-	
-	
+
 }
