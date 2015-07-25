@@ -18,4 +18,12 @@ public class PlayerController {
 	public static void stop() {
 		FXMediaPlayer.stop();
 	}
+	
+	public static void parseMediaKey(){
+		if(FXMediaPlayer.isPaused){
+			FXMediaPlayer.play("");
+		}else{
+			FXMediaPlayer.pause();
+		}
+	}
 }

@@ -327,7 +327,7 @@ public class PlaylistWriter {
 	public static int getPlaylistLength(File playlist){
 		
 		String line = FileUtils.getFirstLine(playlist);
-		
+		if(line == null) return 0;
 		
 		System.out.println("Playlist header line:"+line);
 		

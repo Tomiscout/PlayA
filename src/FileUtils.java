@@ -9,9 +9,14 @@ import java.util.ArrayList;
 import javax.swing.ImageIcon;
 import javax.swing.filechooser.FileSystemView;
 
-import com.mpatric.mp3agic.InvalidDataException;
-import com.mpatric.mp3agic.Mp3File;
-import com.mpatric.mp3agic.UnsupportedTagException;
+import org.jaudiotagger.audio.AudioFile;
+import org.jaudiotagger.audio.AudioFileIO;
+import org.jaudiotagger.tag.Tag;
+import org.jaudiotagger.tag.TagException;
+import org.jaudiotagger.audio.AudioHeader;
+import org.jaudiotagger.audio.exceptions.CannotReadException;
+import org.jaudiotagger.audio.exceptions.InvalidAudioFrameException;
+import org.jaudiotagger.audio.exceptions.ReadOnlyFileException;
 
 public class FileUtils {
 
@@ -92,31 +97,46 @@ public class FileUtils {
 			try {
 				// Reads in UTF-8
 				BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(f), "UTF-8"));
-				int count=0;
+				int count = 0;
 				String song;
 				while ((song = br.readLine()) != null) {
-					if(!song.startsWith(PlaylistWriter.PLAYLISTHEADER)){
+					if (!song.startsWith(PlaylistWriter.PLAYLISTHEADER)) {
 						count++;
 					}
 				}
 
 				br.close();
-				return count-1;
+				return count - 1;
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		return -1;
 	}
 
-	public static long getSongLength(File f) {
+	public static long getSongLength(File file) {
 		long length = -1;
+
 		try {
-			Mp3File mp3file = new Mp3File(f.getAbsolutePath());
-			length = mp3file.getLengthInSeconds();
-		} catch (UnsupportedTagException | InvalidDataException | IOException e) {
+			AudioFile f = AudioFileIO.read(file);
+			Tag tag = f.getTag();
+			AudioHeader a = f.getAudioHeader();
+			length = a.getTrackLength();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (InvalidAudioFrameException e) {
+			e.printStackTrace();
+		}
+		catch (CannotReadException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (TagException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ReadOnlyFileException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+	
 		return length;
 	}
 

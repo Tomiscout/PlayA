@@ -1,3 +1,7 @@
+import com.melloware.jintellitype.HotkeyListener;
+import com.melloware.jintellitype.IntellitypeListener;
+import com.melloware.jintellitype.JIntellitype;
+
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -28,14 +32,19 @@ public class Main extends Application {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		
-		
-		
+		KeyListener kl = new KeyListener();
 	}
+	
+	@Override
+	public void stop(){
+		JIntellitype.getInstance().cleanUp();
+	}
+	
 
 	public static Stage getPrimaryStage() {
 		return pStage;
 	}
+
 }
 
 // TODO
