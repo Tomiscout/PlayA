@@ -11,7 +11,6 @@ import javax.swing.filechooser.FileSystemView;
 
 import org.jaudiotagger.audio.AudioFile;
 import org.jaudiotagger.audio.AudioFileIO;
-import org.jaudiotagger.tag.Tag;
 import org.jaudiotagger.tag.TagException;
 import org.jaudiotagger.audio.AudioHeader;
 import org.jaudiotagger.audio.exceptions.CannotReadException;
@@ -118,7 +117,6 @@ public class FileUtils {
 
 		try {
 			AudioFile f = AudioFileIO.read(file);
-			Tag tag = f.getTag();
 			AudioHeader a = f.getAudioHeader();
 			length = a.getTrackLength();
 		} catch (IOException e) {
@@ -207,5 +205,13 @@ public class FileUtils {
 			return "";
 		}
 		return line;
+	}
+	
+	public static void copyFile( File from, File to ){
+	    try {
+			Files.copy( from.toPath(), to.toPath() );
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 }

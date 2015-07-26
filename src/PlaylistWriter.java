@@ -22,20 +22,16 @@ import javax.swing.tree.TreePath;
 
 public class PlaylistWriter {
 
-	protected static File workingDir = new File(FileUtils.getWorkDirectory());
 	protected static PrintWriter printWriter;
 	static int progress;
 	public static final String PLAYLISTHEADER = "¥dir:";
 
 	public static boolean createPlaylist(String name, ArrayList<TreePath> folders, boolean subFolders) {
-		if (!workingDir.exists())
-			workingDir.mkdirs();// Creates directories
-
 		printWriter = null;
 
 		// TODO If it already exists
 		// .plp
-		File file = new File(workingDir.getAbsolutePath() + "\\" + name + ".plp");
+		File file = new File(getWorkingDir().getAbsolutePath() + "\\" + name + ".plp");
 		file.getParentFile().mkdirs();
 
 		ArrayList<Path> paths = new ArrayList<Path>();
@@ -122,7 +118,7 @@ public class PlaylistWriter {
 		List<String> duplicates = new ArrayList<String>();
 
 		for (String playlistName : playlists) {
-			File pFile = new File(workingDir.getAbsolutePath() + "\\" + playlistName + ".plp");
+			File pFile = new File(getWorkingDir().getAbsolutePath() + "\\" + playlistName + ".plp");
 
 			if (pFile.exists()) {
 				try {
@@ -213,7 +209,7 @@ public class PlaylistWriter {
 
 		// prints contents to file
 		try {
-			printWriter = new PrintWriter(new File(workingDir.getAbsolutePath() + "\\" + name + ".plp"), "UTF-8");
+			printWriter = new PrintWriter(new File(getWorkingDir().getAbsolutePath() + "\\" + name + ".plp"), "UTF-8");
 		} catch (FileNotFoundException e) {
 			System.out.println("File not found while creating playist");
 		} catch (UnsupportedEncodingException e) {
@@ -239,7 +235,7 @@ public class PlaylistWriter {
 
 	// TODO Check if song already exists
 	public static boolean addSongToFile(String name, String dir) {
-		File tFile = new File(workingDir.getAbsolutePath() + "\\" + name + ".plp");
+		File tFile = new File(getWorkingDir().getAbsolutePath() + "\\" + name + ".plp");
 		if (tFile.exists()) {
 			FileWriter fw;
 			try {
@@ -263,7 +259,7 @@ public class PlaylistWriter {
 	// FIX header issues not loading first song
 	// First line is playlist info header
 	public static String[] readPlaylist(String name) {
-		File tFile = new File(workingDir.getAbsolutePath() + "\\" + name + ".plp");
+		File tFile = new File(getWorkingDir().getAbsolutePath() + "\\" + name + ".plp");
 		String song;
 		ArrayList<String> songs = new ArrayList<String>();
 
@@ -346,5 +342,11 @@ public class PlaylistWriter {
 			}			
 		}
 		return n;
+	}
+	
+	public static File getWorkingDir(){
+		File workingDir = new File(FileUtils.getWorkDirectory()+"playlists\\");
+		if(!workingDir.exists()) workingDir.mkdirs();
+		return workingDir;
 	}
 }

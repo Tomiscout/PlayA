@@ -1,5 +1,6 @@
-import com.melloware.jintellitype.HotkeyListener;
-import com.melloware.jintellitype.IntellitypeListener;
+import java.io.File;
+import java.net.URISyntaxException;
+
 import com.melloware.jintellitype.JIntellitype;
 
 import javafx.application.Application;
@@ -32,19 +33,38 @@ public class Main extends Application {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+
+		// initializes libraries
+		LibraryLoader.initializeLibraries();
+
+		// puts itself in the workdir folder
+		MakeLauncher();
+
+		@SuppressWarnings("unused")
 		KeyListener kl = new KeyListener();
 	}
-	
+
 	@Override
-	public void stop(){
+	public void stop() {
 		JIntellitype.getInstance().cleanUp();
 	}
-	
 
 	public static Stage getPrimaryStage() {
 		return pStage;
 	}
 
+	private static void MakeLauncher() {
+		File launcherFile = null;
+		try {
+			launcherFile = new File(Main.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath());
+			if(launcherFile.getAbsolutePath().endsWith("bin")) return; //if this program is not opened from .jar (but eclipse)
+		} catch (URISyntaxException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		File newLauncher = new File(FileUtils.getWorkDirectory() + "\\PlayA.jar");
+		FileUtils.copyFile(launcherFile, newLauncher);
+	}
 }
 
 // TODO

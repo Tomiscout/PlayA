@@ -189,7 +189,7 @@ public class PlaylistPane extends VBox {
 
 	private void reloadPlaylist(){
 		if(data != null) data.clear();
-		File[] playlists = FileUtils.getExcludedFiles(new File(FileUtils.getWorkDirectory()), ".plp");
+		File[] playlists = FileUtils.getExcludedFiles(PlaylistWriter.getWorkingDir(), ".plp");
 		for (File f : playlists) {
 			try {
 				String name = f.getName().substring(0, f.getName().length() - 4);
