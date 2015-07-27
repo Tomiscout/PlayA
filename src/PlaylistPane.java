@@ -1,5 +1,7 @@
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Optional;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
@@ -28,6 +30,9 @@ import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.input.DataFormat;
+import javafx.scene.input.Dragboard;
+import javafx.scene.input.TransferMode;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
@@ -67,7 +72,7 @@ public class PlaylistPane extends VBox {
 		customTab.setContent(customTable);
 
 		tablePane.getTabs().addAll(foldersTab, customTab);
-		
+
 		// ProgressBar
 		bar = new ProgressBar(0);
 		bar.setMaxWidth(Double.MAX_VALUE);
@@ -110,35 +115,52 @@ public class PlaylistPane extends VBox {
 		setPadding(new Insets(10, 0, 0, 10));
 		getChildren().addAll(topPane, tablePane);
 		setMinWidth(260);
+
+		setOnDragOver(event -> {
+			if (event.getGestureSource() != this) {
+				event.acceptTransferModes(TransferMode.MOVE);
+			}
+			event.consume();
+		});
+
+		// Drag'n'drop
+		setOnDragDropped(event -> {
+			Dragboard db = event.getDragboard();
+			DataFormat df = DataFormat.lookupMimeType("java.file-list");
+			ArrayList<File> buffer = (ArrayList<File>) db.getContent(df);
+			handlePlaylistDrop(buffer);
+			event.consume();
+		});
+
 		// Loading playlist
 		reloadPlaylists();
 	}
 
-	//Loads playlists, hardcoded
+	// Loads playlists, hardcoded
 	public static void reloadPlaylists() {
-		PlaylistTable[] pt = {folderTable, customTable};
-		for(PlaylistTable t : pt){
+		PlaylistTable[] pt = { folderTable, customTable };
+		for (PlaylistTable t : pt) {
 			ObservableList<PlaylistObject> data = t.data;
 			if (data != null)
 				data.clear();
 		}
-		
-			File[] playlists = FileUtils.getExcludedFiles(PlaylistWriter.getWorkingDir(), ".plp");
-			for (File f : playlists) {
-				PlaylistHeader header = new PlaylistHeader(f);
-				if(header.getType() == 0){
-					folderTable.data.add(header.getPlaylistObject());
-				}else if(header.getType() == 1){
-					
-				}else if(header.getType() == 2){
-					
-				}
-				
+
+		File[] playlists = FileUtils.getExcludedFiles(PlaylistWriter.getWorkingDir(), ".plp");
+		for (File f : playlists) {
+			PlaylistHeader header = new PlaylistHeader(f);
+			if (header.getType() == 0) {
+				folderTable.data.add(header.getPlaylistObject());
+			} else if (header.getType() == 1) {
+				customTable.data.add(header.getPlaylistObject());
+			} else if (header.getType() == 2) {
+
 			}
-		
+
+		}
+
 	}
-	
-	public static void DeletePlaylists(){
+
+	public static void DeletePlaylists() {
 		Alert alert = new Alert(AlertType.CONFIRMATION);
 		alert.setTitle("Playlist deletion");
 		alert.setHeaderText("Are you sure?");
@@ -174,7 +196,7 @@ public class PlaylistPane extends VBox {
 		}
 	}
 
-	public static void RenamePlaylist(){
+	public static void RenamePlaylist() {
 		PlaylistObject selectedObj = getCurrentSelectedItem();
 		if (selectedObj != null) {
 			File playlistFile = new File(workingDir.getAbsolutePath() + "\\" + selectedObj.getName() + ".plp");
@@ -204,7 +226,7 @@ public class PlaylistPane extends VBox {
 			}
 		}
 	}
-	
+
 	public static PlaylistTable getCurrentTable() {
 		ObservableList<Tab> tabs = tablePane.getTabs();
 		for (Tab t : tabs) {
@@ -228,6 +250,51 @@ public class PlaylistPane extends VBox {
 	@SuppressWarnings("unchecked")
 	public static PlaylistObject getCurrentSelectedItem() {
 		return (PlaylistObject) getCurrentTable().getSelectionModel().getSelectedItem();
+	}
+
+	// Handles dragged files on PlaylistPane
+	private void handlePlaylistDrop(ArrayList<File> fileList) {
+		int folders = 0;
+
+		for (File f : fileList) {
+			if (f.isDirectory())
+				folders++;
+		}
+System.out.println(folders);
+		if (folders <= 1) {
+
+			TextInputDialog dialog = new TextInputDialog();
+			dialog.setTitle("Playlist name");
+			dialog.setContentText("Enter playlist name: ");
+
+			if (fileList.size() == 1 && folders == 1) {
+				//dialog.setResult(files.get(0).getName());
+			}
+
+			// Gets input result and loops if filename is not allowed
+			boolean nameLoop = true;
+			Optional<String> result = null;
+			while (nameLoop) {
+				nameLoop = false;
+				System.out.println("Opening name dialog");
+				result = dialog.showAndWait();
+				if (result.isPresent()) {
+					if (!FileUtils.isNameCorrect(result.get())) {
+						nameLoop = true;
+					}
+				}
+			}
+
+			if (result.isPresent()) {
+				String name = result.get();
+				File[] filesArray = fileList.toArray(new File[fileList.size()]);
+				PlaylistWriter.createPlaylist(name, filesArray);
+
+			} else {
+				// Display options window
+			}
+		}
+
 	}
 
 	// Opens custom playlist factory window
@@ -291,7 +358,7 @@ public class PlaylistPane extends VBox {
 
 			if (!fct.folders.isEmpty() && result.isPresent()) {
 				String name = result.get();
-				PlaylistWriter.createPlaylist(name, fct.folders, subCheckBox.isSelected());
+				//PlaylistWriter.createPlaylist(name, fct.folders, subCheckBox.isSelected());
 				window.close();
 			}
 		});

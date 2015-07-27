@@ -88,6 +88,14 @@ public class FileUtils {
 			return null;
 		}
 	}
+	
+	public static File[] filterFilesByExtention(ArrayList<File> files, String ext){
+		ArrayList<File> filtered = new ArrayList<File>();
+		for(File f : files){
+			if(f.getAbsolutePath().endsWith(ext)) filtered.add(f);
+		}
+		return filtered.toArray(new File[filtered.size()]);
+	}
 
 	// TODO fix header and folder header issues
 	// Credit to 'martinus' @Stackoverflow
@@ -169,28 +177,31 @@ public class FileUtils {
 		return string;
 	}
 
-	public static Path[] getSubFolders(Path path) {
-		ArrayList<Path> paths = new ArrayList<Path>();
+	public static File[] getSubFolders(File path) {
+		Path p = path.toPath();
+		ArrayList<File> paths = new ArrayList<File>();
 		try {
-			Files.walk(path).filter(Files::isDirectory).forEach(e -> paths.add(e));
+			Files.walk(p).filter(Files::isDirectory).forEach(e -> paths.add(e.toFile()));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 
-		Path[] pathArray = paths.toArray(new Path[paths.size()]);
-		return pathArray;
+		File[] fileArray = paths.toArray(new File[paths.size()]);
+		return fileArray;
 	}
 
-	public static Path[] getSubFolders(Path[] dir) {
-		ArrayList<Path> subFolders = new ArrayList<Path>();
+	public static File[] getSubFolders(File[] dir) {
+		ArrayList<File> subFolders = new ArrayList<File>();
 
-		for (Path p : dir) {
-			Path[] childs = getSubFolders(p);
-			for (Path c : childs) {
-				subFolders.add(c);
+		for (File p : dir) {
+			if(p.isDirectory()){
+				File[] childs = getSubFolders(p);
+				for (File c : childs) {
+					subFolders.add(c);
+				}
 			}
 		}
-		Path[] subFoldersArray = subFolders.toArray(new Path[subFolders.size()]);
+		File[] subFoldersArray = subFolders.toArray(new File[subFolders.size()]);
 		return subFoldersArray;
 	}
 

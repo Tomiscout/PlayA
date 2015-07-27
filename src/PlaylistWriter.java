@@ -31,45 +31,31 @@ public class PlaylistWriter {
 	public static final String URLHEADER = "url:";
 	public static final String SONGCOUNTHEADER = "count:";
 
-	public static boolean createPlaylist(String name, ArrayList<TreePath> folders, boolean subFolders) {
+	//TODO Make any File[] input viable
+	public static boolean createPlaylist(String name, File[] files) {
+		System.out.println("Creating playlist with input length:"+files.length);
 		printWriter = null;
 
-		// TODO If it already exists
-		// .plp
 		File file = new File(getWorkingDir().getAbsolutePath() + "\\" + name + ".plp");
 		file.getParentFile().mkdirs();
 
-		ArrayList<Path> paths = new ArrayList<Path>();
-		for (int i = 0; i < folders.size(); i++) {
-			Path currentPath = Paths.get((folders.get(i).getLastPathComponent().toString()));
-
-			// If requires subfolders
-			if (subFolders) {
-				Path[] treePaths = FileUtils.getSubFolders(currentPath);
-				for (Path p : treePaths) {
+		ArrayList<File> rootFiles = new ArrayList<File>();
+		ArrayList<File> paths = new ArrayList<File>();
+		for(File path : files){
+			if(path.isDirectory()){
+				File[] treePaths = FileUtils.getSubFolders(path);
+				for (File p : treePaths) {
 					paths.add(p);
 				}
-			} else {
-				paths.add(currentPath);
+			}else if(path.isFile()){
+				rootFiles.add(path);
 			}
 		}
 
-		List<String> al = new ArrayList<>();
-
-		for (Path p : paths) {
-			al.add(p.toString());
-		}
-
-		// Removes duplicate Directories
-		if (subFolders) {
-			Set<String> hs = new HashSet<>();
-			hs.addAll(al);
-			al.clear();
-			al.addAll(hs);
-		}
+		File[] rootSongs = FileUtils.filterFilesByExtention(rootFiles, ".mp3");
 
 		// Enables progressbar
-		PlaylistPane.enableProgressBar(al.size());
+		PlaylistPane.enableProgressBar(paths.size());
 		progress = 0;
 
 		new Thread() {
@@ -83,14 +69,26 @@ public class PlaylistWriter {
 				} catch (UnsupportedEncodingException e) {
 					System.out.println("Unsupported Encoding in PlaylistWriter.createPlaylist");
 				}
-				for (String path : al) {
-					File[] songs = FileUtils.getExcludedFiles(new File(path), ".mp3");
-
+				
+				int rootIndicator = 0;
+				if(rootSongs.length>0) rootIndicator = 1;
+				for (int i = 0; i < paths.size()+rootIndicator; i++) {
+					File path;
+					File[] songs;
+					if(1==paths.size()+rootIndicator-1){
+						path = rootSongs[0].getParentFile();
+						songs = rootSongs;
+					}else{
+						path = paths.get(i);
+						songs = FileUtils.getExcludedFiles(path, ".mp3");
+					}
+					
+					
 					if (songs.length != 0) {
 						PlaylistPane.setProgressBarItemMax(songs.length);
 					}
 
-					printWriter.println(SEPARATOR+DIRECTORYHEADER + path.toString());
+					printWriter.println(SEPARATOR+DIRECTORYHEADER + path.getAbsolutePath());
 					for (int o = 0; o < songs.length; o++) {
 
 						long length = FileUtils.getSongLength(songs[o]);

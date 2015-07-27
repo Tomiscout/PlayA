@@ -18,10 +18,7 @@ public class PlaylistHeader {
 	
 	public PlaylistHeader(File playlist) {
 		name = playlist.getName().substring(0, playlist.getName().length() - 4);
-		System.out.println("Header name: " + name);
-
 		String line = FileUtils.getFirstLine(playlist);
-		System.out.println("Line: " + line);
 		if (line != null) {
 			String[] properties = line.split(PlaylistWriter.SEPARATOR);
 			for (String prop : properties) {
