@@ -21,7 +21,7 @@ public class CustomPlaylistPane extends BorderPane {
 		getStylesheets().add("MainTheme.css");
 		table = new TableView();
 		table.setEditable(false);
-		table.setItems(PlaylistPane.data);
+		
 		table.setMaxWidth(260);
 		table.setMaxHeight(390);
 		table.setPrefHeight(400);

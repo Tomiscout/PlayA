@@ -99,7 +99,7 @@ public class FileUtils {
 				int count = 0;
 				String song;
 				while ((song = br.readLine()) != null) {
-					if (!song.startsWith(PlaylistWriter.PLAYLISTHEADER)) {
+					if (!song.startsWith(PlaylistWriter.DIRECTORYHEADER)) {
 						count++;
 					}
 				}
@@ -195,7 +195,7 @@ public class FileUtils {
 	}
 
 	public static String getFirstLine(File f) {
-		String line;
+		String line = null;
 		try {
 			BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(f), "UTF-8"));
 

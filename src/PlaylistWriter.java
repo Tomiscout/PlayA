@@ -24,7 +24,12 @@ public class PlaylistWriter {
 
 	protected static PrintWriter printWriter;
 	static int progress;
-	public static final String PLAYLISTHEADER = "¥dir:";
+	public static final String SEPARATOR = "¥";
+	public static final String DIRECTORYHEADER = "dir:";
+	public static final String LENGTHHEADER = "length:";
+	public static final String TYPEHEADER = "type:";
+	public static final String URLHEADER = "url:";
+	public static final String SONGCOUNTHEADER = "count:";
 
 	public static boolean createPlaylist(String name, ArrayList<TreePath> folders, boolean subFolders) {
 		printWriter = null;
@@ -85,7 +90,7 @@ public class PlaylistWriter {
 						PlaylistPane.setProgressBarItemMax(songs.length);
 					}
 
-					printWriter.println(PLAYLISTHEADER + path.toString());
+					printWriter.println(SEPARATOR+DIRECTORYHEADER + path.toString());
 					for (int o = 0; o < songs.length; o++) {
 
 						long length = FileUtils.getSongLength(songs[o]);
@@ -100,10 +105,13 @@ public class PlaylistWriter {
 				}
 				PlaylistPane.disableProgressBar();
 				printWriter.close();
-				appendFirstLine(file, songLengths + "");
+
 				String fileName = file.getName();
-				PlaylistPane.data.add(new PlaylistObject(fileName.substring(0, fileName.lastIndexOf(".plp")), songCount,
-						FileUtils.formatSeconds(songLengths)));
+				fileName = fileName.substring(0, fileName.lastIndexOf(".plp"));
+				PlaylistHeader ph = new PlaylistHeader(fileName, 0, songLengths, songCount);
+				appendFirstLine(file, ph.toString());
+				
+				PlaylistPane.folderTable.data.add(ph.getPlaylistObject());
 			}
 		}.start();
 
@@ -130,7 +138,7 @@ public class PlaylistWriter {
 						playlistLenghts.add(line);
 					}
 					while ((line = br.readLine()) != null) {
-						if (line.startsWith(PLAYLISTHEADER)) {
+						if (line.startsWith(SEPARATOR+DIRECTORYHEADER)) {
 							// Checks for duplicates
 							if (!foldersUsed.add(line)) {
 								duplicates.add(line);
@@ -159,7 +167,7 @@ public class PlaylistWriter {
 						isSaving = true;
 						continue;
 					}
-					if (content.get(i).startsWith(PLAYLISTHEADER) && isSaving == true) {
+					if (content.get(i).startsWith(SEPARATOR+DIRECTORYHEADER) && isSaving == true) {
 						if (!content.get(i).equals(s)) {
 							isSaving = false;// If same folder header occurs
 												// again ignore
@@ -185,7 +193,7 @@ public class PlaylistWriter {
 					if (content.get(i).equals(s)) {
 						// Remove lines until other playlistheader occured
 						content.remove(i);
-						while (!content.get(i).startsWith(PLAYLISTHEADER)) {
+						while (!content.get(i).startsWith(SEPARATOR+DIRECTORYHEADER)) {
 							content.remove(i);
 						}
 						isDeleted = true;
@@ -195,6 +203,7 @@ public class PlaylistWriter {
 				content.add(s);
 				content.addAll(filteredSongs);
 			}
+			PlaylistPane.reloadPlaylists();
 		}
 
 		// Gets playlist lenghts
@@ -272,7 +281,7 @@ public class PlaylistWriter {
 				String currentDir = "";
 
 				while ((song = br.readLine()) != null) {
-					if (song.startsWith(PLAYLISTHEADER)) {
+					if (song.startsWith(SEPARATOR+DIRECTORYHEADER)) {
 						currentDir = song.substring(5);
 						continue;
 					}
@@ -324,9 +333,7 @@ public class PlaylistWriter {
 		
 		String line = FileUtils.getFirstLine(playlist);
 		if(line == null) return 0;
-		
-		System.out.println("Playlist header line:"+line);
-		
+	
 		//TODO when expanding header extract the number only
 		//String number = line.substring(0, line.indexOf(" "));
 		
@@ -349,4 +356,5 @@ public class PlaylistWriter {
 		if(!workingDir.exists()) workingDir.mkdirs();
 		return workingDir;
 	}
+	
 }

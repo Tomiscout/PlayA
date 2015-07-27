@@ -17,7 +17,7 @@ public class LibraryLoader {
 		}
 
 		try {
-			//Loads correct version of this dll
+			// Loads correct version of this dll
 			String exportedLib;
 			if (is64bit) {
 				exportedLib = ExportLibrary("JIntellitype64.dll");
@@ -25,29 +25,39 @@ public class LibraryLoader {
 				exportedLib = ExportLibrary("JIntellitype.dll");
 			}
 			JIntellitype.setLibraryLocation(exportedLib);
-			
+
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
 
-	//Adds lib/ to resource path
+	// Adds lib/ to resource path
 	static public String ExportLibrary(String resourceName) throws Exception {
 		InputStream stream = null;
 		OutputStream resStreamOut = null;
 		File exportFolder;
 		try {
-			stream = LibraryLoader.class.getResourceAsStream("/lib/"+resourceName);
+			exportFolder = new File(FileUtils.getWorkDirectory() + "lib\\");
+			if (!exportFolder.exists()){
+				exportFolder.mkdir();
+			}
+			
+			File libFile = new File(exportFolder.getAbsolutePath() + "\\" + resourceName);
+			if (libFile.exists()){
+				return libFile.getAbsolutePath();
+			}
+				
+			
+			
+			stream = LibraryLoader.class.getResourceAsStream("/lib/" + resourceName);
 			if (stream == null) {
 				throw new Exception("Cannot get resource \"" + resourceName + "\" from Jar file.");
 			}
 
 			int readBytes;
 			byte[] buffer = new byte[4096];
-			exportFolder = new File(FileUtils.getWorkDirectory() + "lib\\");
-			if(!exportFolder.exists()) exportFolder.mkdir();
-
-			resStreamOut = new FileOutputStream(exportFolder.getAbsolutePath()+"\\"+resourceName);
+			
+			resStreamOut = new FileOutputStream(libFile);
 			while ((readBytes = stream.read(buffer)) > 0) {
 				resStreamOut.write(buffer, 0, readBytes);
 			}
@@ -56,10 +66,10 @@ public class LibraryLoader {
 			ex.printStackTrace();
 			throw ex;
 		} finally {
-			stream.close();
-			resStreamOut.close();
+			if(stream != null)stream.close();
+			if(resStreamOut != null)resStreamOut.close();
 		}
 
-		return exportFolder.getAbsolutePath()+"\\"+resourceName;
+		return exportFolder.getAbsolutePath() + "\\" + resourceName;
 	}
 }

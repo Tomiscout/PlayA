@@ -16,10 +16,13 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
+import javafx.scene.control.TabPane.TabClosingPolicy;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ProgressBar;
+import javafx.scene.control.Tab;
+import javafx.scene.control.TabPane;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
@@ -31,10 +34,11 @@ import javafx.stage.Stage;
 @SuppressWarnings("rawtypes")
 public class PlaylistPane extends VBox {
 
-	TableView table;
-	public static ObservableList<PlaylistObject> data = FXCollections.observableArrayList();
+	static PlaylistTable folderTable;
+	static PlaylistTable customTable;
 
-	static String workingDir = FileUtils.getWorkDirectory();
+	static TabPane tablePane;
+	static File workingDir = PlaylistWriter.getWorkingDir();
 	static ProgressBar bar;
 	static double currentProgress;
 	static double maxProgress;
@@ -46,49 +50,28 @@ public class PlaylistPane extends VBox {
 
 	@SuppressWarnings("unchecked")
 	public PlaylistPane() {
-		BorderPane tablePane = new BorderPane();
-		table = new TableView();
-		table.setEditable(false);
-		table.setItems(data);
-		table.setMaxWidth(260);
-		table.setMaxHeight(800);
-		table.setPrefHeight(800);
-		tablePane.setCenter(table);
+		tablePane = new TabPane();
+		tablePane.setTabClosingPolicy(TabClosingPolicy.UNAVAILABLE);
 
-		TableColumn<PlaylistObject, String> nameColumn = new TableColumn("Name");
-		nameColumn.setMaxWidth(224);
-		nameColumn.setMinWidth(80);
-		nameColumn.setPrefWidth(138);
-		nameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
+		Tab foldersTab = new Tab("Folders");
+		Tab customTab = new Tab("Custom");
 
-		TableColumn<PlaylistObject, Integer> countColumn = new TableColumn("Songs");
-		countColumn.setMaxWidth(40);
-		countColumn.setMinWidth(26);
-		countColumn.setCellValueFactory(new PropertyValueFactory<>("songs"));
+		folderTable = new PlaylistTable();
+		customTable = new PlaylistTable();
 
-		TableColumn<PlaylistObject, String> timeColumn = new TableColumn("Length");
-		timeColumn.setMaxWidth(76);
-		timeColumn.setMinWidth(40);
-		timeColumn.setCellValueFactory(new PropertyValueFactory<>("length"));
+		BorderPane folderTablePane = new BorderPane();
 
-		table.getColumns().addAll(nameColumn, countColumn, timeColumn);
+		folderTablePane.setCenter(tablePane);
 
-		// Double click listener
-		table.setRowFactory(tv -> {
-			TableRow<PlaylistObject> row = new TableRow<>();
-			row.setOnMouseClicked(event -> {
-				if (event.getClickCount() == 2 && (!row.isEmpty())) {
-					PlaylistObject rowData = row.getItem();
-					PlaylistController.openPlaylist(rowData.getName());
-				}
-			});
-			return row;
-		});
+		foldersTab.setContent(folderTable);
+		customTab.setContent(customTable);
 
+		tablePane.getTabs().addAll(foldersTab, customTab);
+		
 		// ProgressBar
 		bar = new ProgressBar(0);
 		bar.setMaxWidth(Double.MAX_VALUE);
-		tablePane.setBottom(bar);
+		folderTablePane.setBottom(bar);
 		disableProgressBar();
 
 		BorderPane topPane = new BorderPane();
@@ -108,46 +91,65 @@ public class PlaylistPane extends VBox {
 		});
 
 		renamePlaylist.setOnAction(e -> {
-
-			PlaylistObject selectedObj = (PlaylistObject) table.getSelectionModel().getSelectedItem();
-			if (selectedObj != null) {
-				File playlistFile = new File(workingDir+selectedObj.getName()+".plp");
-				if(!playlistFile.exists()) return;
-
-				TextInputDialog dialog = new TextInputDialog();
-				dialog.setTitle("Playlist name");
-				dialog.setContentText("Enter playlist name: ");
-
-				// Gets input result and loops if filename is not allowed
-				boolean nameLoop = true;
-				Optional<String> result = null;
-				while (nameLoop) {
-					nameLoop = false;
-					result = dialog.showAndWait();
-					if (result.isPresent()) {
-						if (!FileUtils.isNameCorrect(result.get())) {
-							nameLoop = true;
-						}
-					}
-				}
-				
-				if(result.isPresent()){
-					playlistFile.renameTo(new File(playlistFile.getParent()+"\\"+result.get()+".plp"));
-					reloadPlaylist();
-				}
-			}
+			RenamePlaylist();
 		});
 
 		delPlaylist.setOnAction(e -> {
-			Alert alert = new Alert(AlertType.CONFIRMATION);
-			alert.setTitle("Playlist deletion");
-			alert.setHeaderText("Are you sure?");
-			PlaylistObject po = (PlaylistObject) table.getSelectionModel().getSelectedItem();
+			DeletePlaylists();
+		});
 
-			if (po != null) {
+		HBox bottomButtons = new HBox();
+		bottomButtons.getChildren().addAll(newPlaylist, customPlaylist, renamePlaylist, delPlaylist);
+		topPane.setBottom(bottomButtons);
+
+		newPlaylist.setPrefWidth(buttonWidth);
+		customPlaylist.setPrefWidth(buttonWidth);
+		delPlaylist.setPrefWidth(buttonWidth);
+
+		setSpacing(5);
+		setPadding(new Insets(10, 0, 0, 10));
+		getChildren().addAll(topPane, tablePane);
+		setMinWidth(260);
+		// Loading playlist
+		reloadPlaylists();
+	}
+
+	//Loads playlists, hardcoded
+	public static void reloadPlaylists() {
+		PlaylistTable[] pt = {folderTable, customTable};
+		for(PlaylistTable t : pt){
+			ObservableList<PlaylistObject> data = t.data;
+			if (data != null)
+				data.clear();
+		}
+		
+			File[] playlists = FileUtils.getExcludedFiles(PlaylistWriter.getWorkingDir(), ".plp");
+			for (File f : playlists) {
+				PlaylistHeader header = new PlaylistHeader(f);
+				if(header.getType() == 0){
+					folderTable.data.add(header.getPlaylistObject());
+				}else if(header.getType() == 1){
+					
+				}else if(header.getType() == 2){
+					
+				}
+				
+			}
+		
+	}
+	
+	public static void DeletePlaylists(){
+		Alert alert = new Alert(AlertType.CONFIRMATION);
+		alert.setTitle("Playlist deletion");
+		alert.setHeaderText("Are you sure?");
+		ObservableList<PlaylistObject> list = getCurrentSelectedItems();
+		PlaylistTable currentTable = getCurrentTable();
+
+		if (list != null) {
+			alert.setContentText("Do you want to delete " + list.size() + " playlist(s)?");
+
+			for (PlaylistObject po : list) {
 				String s = po.getName();
-				alert.setContentText("Do you want to delete playlist " + s + "?");
-
 				Optional<ButtonType> result = alert.showAndWait();
 				if (result.get() == ButtonType.OK) {
 					// Makes correct filename for deletion
@@ -166,46 +168,68 @@ public class PlaylistPane extends VBox {
 						System.out.println("Couldn't find playlist for deletion: " + delFile.getAbsolutePath());
 					}
 
-					data.remove(po);// Deleting from the table
+					currentTable.data.remove(po);// Deleting from the table
 				}
 			}
-		});
-
-		HBox bottomButtons = new HBox();
-		bottomButtons.getChildren().addAll(newPlaylist, customPlaylist, renamePlaylist, delPlaylist);
-		topPane.setBottom(bottomButtons);
-
-		newPlaylist.setPrefWidth(buttonWidth);
-		customPlaylist.setPrefWidth(buttonWidth);
-		delPlaylist.setPrefWidth(buttonWidth);
-
-		setSpacing(5);
-		setPadding(new Insets(10, 0, 0, 10));
-		getChildren().addAll(topPane, tablePane);
-		setMinWidth(260);
-		// Loading playlist
-		reloadPlaylist();
+		}
 	}
 
-	private void reloadPlaylist(){
-		if(data != null) data.clear();
-		File[] playlists = FileUtils.getExcludedFiles(PlaylistWriter.getWorkingDir(), ".plp");
-		for (File f : playlists) {
-			try {
-				String name = f.getName().substring(0, f.getName().length() - 4);
-				String length;
+	public static void RenamePlaylist(){
+		PlaylistObject selectedObj = getCurrentSelectedItem();
+		if (selectedObj != null) {
+			File playlistFile = new File(workingDir.getAbsolutePath() + "\\" + selectedObj.getName() + ".plp");
+			if (!playlistFile.exists())
+				return;
 
-				length = FileUtils.formatSeconds(PlaylistWriter.getPlaylistLength(f));
+			TextInputDialog dialog = new TextInputDialog();
+			dialog.setTitle("Playlist name");
+			dialog.setContentText("Enter playlist name: ");
 
-				data.add(new PlaylistObject(name, FileUtils.countLines(f), length));
+			// Gets input result and loops if filename is not allowed
+			boolean nameLoop = true;
+			Optional<String> result = null;
+			while (nameLoop) {
+				nameLoop = false;
+				result = dialog.showAndWait();
+				if (result.isPresent()) {
+					if (!FileUtils.isNameCorrect(result.get())) {
+						nameLoop = true;
+					}
+				}
+			}
 
-				System.out.println("Added playlist " + f.getName());
-			} catch (IOException ioe) {
-				System.out.println("Couldn't count songs in playlist: " + f.getAbsolutePath());
+			if (result.isPresent()) {
+				playlistFile.renameTo(new File(playlistFile.getParent() + "\\" + result.get() + ".plp"));
+				reloadPlaylists();
 			}
 		}
 	}
 	
+	public static PlaylistTable getCurrentTable() {
+		ObservableList<Tab> tabs = tablePane.getTabs();
+		for (Tab t : tabs) {
+			if (t.isSelected()) {
+				String name = t.getText();
+				if (name.equals("Folders")) {
+					return folderTable;
+				} else if (name.equals("Custom")) {
+					return customTable;
+				}
+			}
+		}
+		return null;
+	}
+
+	@SuppressWarnings("unchecked")
+	public static ObservableList<PlaylistObject> getCurrentSelectedItems() {
+		return getCurrentTable().getSelectionModel().getSelectedItems();
+	}
+
+	@SuppressWarnings("unchecked")
+	public static PlaylistObject getCurrentSelectedItem() {
+		return (PlaylistObject) getCurrentTable().getSelectionModel().getSelectedItem();
+	}
+
 	// Opens custom playlist factory window
 	private void displayCustomFactory() {
 		Stage window = new Stage();
@@ -316,7 +340,4 @@ public class PlaylistPane extends VBox {
 		bar.setManaged(false);
 	}
 
-	public ObservableList<PlaylistObject> getProduct() {
-		return data;
-	}
 }
