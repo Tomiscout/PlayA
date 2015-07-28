@@ -14,8 +14,7 @@ public class PlaylistController {
 		currentSongs.clear();
 		MainGui.data.clear();
 
-		//Skips file header
-		for (int i = 1; i < songs.length; i++) {
+		for (int i = 0; i < songs.length; i++) {
 			String fullName = songs[i];
 			String songName = fullName.substring(fullName.lastIndexOf("\\") + 1, fullName.lastIndexOf(".mp3"));
 			int length = Integer.parseInt((fullName.substring(fullName.lastIndexOf(".mp3") + 5)));

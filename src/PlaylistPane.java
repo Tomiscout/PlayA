@@ -42,6 +42,8 @@ public class PlaylistPane extends VBox {
 	static PlaylistTable folderTable;
 	static PlaylistTable customTable;
 
+	static Stage PlaylistCreationStage;
+
 	static TabPane tablePane;
 	static File workingDir = PlaylistWriter.getWorkingDir();
 	static ProgressBar bar;
@@ -88,11 +90,10 @@ public class PlaylistPane extends VBox {
 		Button delPlaylist = new Button("Delete");
 
 		newPlaylist.setOnAction(e -> {
-			displayChooser();
 
 		});
 		customPlaylist.setOnAction(e -> {
-			displayCustomFactory();
+
 		});
 
 		renamePlaylist.setOnAction(e -> {
@@ -247,7 +248,6 @@ public class PlaylistPane extends VBox {
 		return getCurrentTable().getSelectionModel().getSelectedItems();
 	}
 
-	@SuppressWarnings("unchecked")
 	public static PlaylistObject getCurrentSelectedItem() {
 		return (PlaylistObject) getCurrentTable().getSelectionModel().getSelectedItem();
 	}
@@ -255,129 +255,76 @@ public class PlaylistPane extends VBox {
 	// Handles dragged files on PlaylistPane
 	private void handlePlaylistDrop(ArrayList<File> fileList) {
 		int folders = 0;
+		File[] filesArray = fileList.toArray(new File[fileList.size()]);
 
-		for (File f : fileList) {
+		for (File f : filesArray) {
 			if (f.isDirectory())
 				folders++;
 		}
-System.out.println(folders);
+
 		if (folders <= 1) {
-
-			TextInputDialog dialog = new TextInputDialog();
-			dialog.setTitle("Playlist name");
-			dialog.setContentText("Enter playlist name: ");
-
-			if (fileList.size() == 1 && folders == 1) {
-				//dialog.setResult(files.get(0).getName());
+			PlaylistCreationData data = displayPlaylistCreation(fileList.get(0).getName(), false);
+			if(data.isFinished()){
+				PlaylistWriter.createPlaylist(data.getName(), filesArray);
 			}
-
-			// Gets input result and loops if filename is not allowed
-			boolean nameLoop = true;
-			Optional<String> result = null;
-			while (nameLoop) {
-				nameLoop = false;
-				System.out.println("Opening name dialog");
-				result = dialog.showAndWait();
-				if (result.isPresent()) {
-					if (!FileUtils.isNameCorrect(result.get())) {
-						nameLoop = true;
-					}
+		} else {
+			// Display options window
+			PlaylistCreationData data = displayPlaylistCreation("", true);
+			if (data.isFinished()) {
+				if (data.getRadio()) {
+					PlaylistWriter.createPlaylist(data.getName(), filesArray);
+				} else {
+					PlaylistWriter.createFolderPlaylists(filesArray);
 				}
-			}
-
-			if (result.isPresent()) {
-				String name = result.get();
-				File[] filesArray = fileList.toArray(new File[fileList.size()]);
-				PlaylistWriter.createPlaylist(name, filesArray);
-
-			} else {
-				// Display options window
 			}
 		}
 
 	}
 
+	private class PlaylistCreationData {
+		private String name;
+		private boolean radio;
+		private boolean isFinished;
+
+		public PlaylistCreationData(String s, boolean b, boolean finished) {
+			name = s;
+			radio = b;
+			isFinished = finished;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public boolean getRadio() {
+			return radio;
+		}
+
+		public boolean isFinished() {
+			return isFinished;
+		}
+	}
+
 	// Opens custom playlist factory window
-	private void displayCustomFactory() {
-		Stage window = new Stage();
-		window.initModality(Modality.APPLICATION_MODAL);
-		window.setTitle("Create a custom playlist");
-		window.setWidth(260);
-		window.setHeight(390);
-		window.setResizable(false);
+	private PlaylistCreationData displayPlaylistCreation(String name, boolean radio) {
+		PlaylistCreationStage = new Stage();
+		PlaylistCreationStage.initModality(Modality.APPLICATION_MODAL);
+		PlaylistCreationStage.setTitle("Create a custom playlist");
+		PlaylistCreationStage.setWidth(260);
+		PlaylistCreationStage.setHeight(137);
+		PlaylistCreationStage.setResizable(false);
 
-		Scene scene = new Scene(new CustomPlaylistPane());
-		window.setScene(scene);
-		window.showAndWait();
+		PlaylistCreationPane pane = new PlaylistCreationPane(name, radio);
+		Scene scene = new Scene(pane);
+		PlaylistCreationStage.setScene(scene);
+		PlaylistCreationStage.showAndWait();
+		return new PlaylistCreationData(pane.getResult(), pane.getRadio(), pane.isFinished());
 	}
 
-	// Opens Playlist folder chooser (JTree in SwingNode)
-	private void displayChooser() {
-		Stage window = new Stage();
-
-		window.initModality(Modality.APPLICATION_MODAL);
-		window.setTitle("Choose folder(s)");
-		window.setWidth(270);
-		window.setHeight(386);
-		window.setResizable(false);
-
-		GridPane grid = new GridPane();
-
-		grid.setAlignment(Pos.CENTER);
-
-		HBox buttonPane = new HBox(32);
-		buttonPane.setAlignment(Pos.CENTER);
-		CheckBox subCheckBox = new CheckBox("Sub-folders");
-
-		Button selectButton = new Button("Select");
-
-		buttonPane.getChildren().addAll(subCheckBox, selectButton);
-
-		// Creates file chooser
-		FolderChooserTree fct = new FolderChooserTree();
-		final SwingNode swingNode = new SwingNode();
-		createSwingContent(swingNode, fct);
-
-		selectButton.setOnAction(e -> {
-			TextInputDialog dialog = new TextInputDialog();
-			dialog.setTitle("Playlist name");
-			dialog.setContentText("Enter playlist name: ");
-
-			// Gets input result and loops if filename is not allowed
-			boolean nameLoop = true;
-			Optional<String> result = null;
-			while (nameLoop) {
-				nameLoop = false;
-				result = dialog.showAndWait();
-				if (result.isPresent()) {
-					if (!FileUtils.isNameCorrect(result.get())) {
-						nameLoop = true;
-					}
-				}
-			}
-
-			if (!fct.folders.isEmpty() && result.isPresent()) {
-				String name = result.get();
-				//PlaylistWriter.createPlaylist(name, fct.folders, subCheckBox.isSelected());
-				window.close();
-			}
-		});
-
-		grid.add(swingNode, 0, 0);
-		grid.add(buttonPane, 0, 1);
-
-		Scene scene = new Scene(grid);
-		window.setScene(scene);
-		window.showAndWait();
-	}
-
-	private void createSwingContent(final SwingNode swingNode, JPanel jp) {
-		SwingUtilities.invokeLater(new Runnable() {
-			@Override
-			public void run() {
-				swingNode.setContent(jp);
-			}
-		});
+	public static void closePlaylistCreation() {
+		if (PlaylistCreationStage != null) {
+			PlaylistCreationStage.close();
+		}
 	}
 
 	public static void enableProgressBar(double x) {

@@ -24,98 +24,131 @@ public class PlaylistWriter {
 
 	protected static PrintWriter printWriter;
 	static int progress;
-	public static final String SEPARATOR = "¥";
+	public static final String SEPARATOR = "Â¥";
 	public static final String DIRECTORYHEADER = "dir:";
 	public static final String LENGTHHEADER = "length:";
 	public static final String TYPEHEADER = "type:";
 	public static final String URLHEADER = "url:";
 	public static final String SONGCOUNTHEADER = "count:";
 
-	//TODO Make any File[] input viable
-	public static boolean createPlaylist(String name, File[] files) {
-		System.out.println("Creating playlist with input length:"+files.length);
+	//FIXME bug when creating folder playlists
+	public static boolean createPlaylist(String inputName, File[] files) {
+		System.out.println("Creating playlist with input:"+files.length);
+		if(inputName == null || inputName.equals("")) return false;
 		printWriter = null;
 
-		File file = new File(getWorkingDir().getAbsolutePath() + "\\" + name + ".plp");
-		file.getParentFile().mkdirs();
+		String name;
+		if(inputName.endsWith(".plp")){
+			name = inputName;
+		}else{
+			name = inputName+".plp";
+		}
+		
+		File playlistFile = new File(getWorkingDir().getAbsolutePath() + "\\" + name);
+		playlistFile.getParentFile().mkdirs();
 
 		ArrayList<File> rootFiles = new ArrayList<File>();
-		ArrayList<File> paths = new ArrayList<File>();
-		for(File path : files){
-			if(path.isDirectory()){
-				File[] treePaths = FileUtils.getSubFolders(path);
+		ArrayList<File> folders = new ArrayList<File>();
+		for(File f : files){
+			if(f.isDirectory()){
+				File[] treePaths = FileUtils.getSubFolders(f);
 				for (File p : treePaths) {
-					paths.add(p);
+					folders.add(p);
 				}
-			}else if(path.isFile()){
-				rootFiles.add(path);
+			}else if(f.isFile()){
+				rootFiles.add(f);
+			}else{
+				System.out.println("This shouldnt be here "+f.getAbsolutePath());
 			}
 		}
 
 		File[] rootSongs = FileUtils.filterFilesByExtention(rootFiles, ".mp3");
-
+		int rootFilesIndicator = 0;
+		if(rootSongs.length>0)rootFilesIndicator=1;
 		// Enables progressbar
-		PlaylistPane.enableProgressBar(paths.size());
+		PlaylistPane.enableProgressBar(folders.size()+rootFilesIndicator);
 		progress = 0;
 
 		new Thread() {
 			public void run() {
 				int songLengths = 0;
 				int songCount = 0;
-				try {
-					printWriter = new PrintWriter(file, "UTF-8");
-				} catch (FileNotFoundException e) {
-					System.out.println("File not found while creating playist");
-				} catch (UnsupportedEncodingException e) {
-					System.out.println("Unsupported Encoding in PlaylistWriter.createPlaylist");
-				}
-				
-				int rootIndicator = 0;
-				if(rootSongs.length>0) rootIndicator = 1;
-				for (int i = 0; i < paths.size()+rootIndicator; i++) {
-					File path;
-					File[] songs;
-					if(1==paths.size()+rootIndicator-1){
-						path = rootSongs[0].getParentFile();
-						songs = rootSongs;
-					}else{
-						path = paths.get(i);
+				try{
+					try {
+						printWriter = new PrintWriter(playlistFile, "UTF-8");
+					} catch (FileNotFoundException e) {
+						System.out.println("File not found while creating playist");
+					} catch (UnsupportedEncodingException e) {
+						System.out.println("Unsupported Encoding in PlaylistWriter.createPlaylist");
+					}
+					
+					//Root folder songs
+					if(rootSongs.length>0){
+						PlaylistPane.setProgressBarItemMax(rootSongs.length);
+						printWriter.println(SEPARATOR+DIRECTORYHEADER + rootSongs[0].getParentFile().getAbsolutePath());
+						for (int o = 0; o < rootSongs.length; o++) {
+							long length = FileUtils.getSongLength(rootSongs[o]);
+							songLengths += length;
+							songCount++;
+							printWriter.println(rootSongs[o].getName() + " " + length);
+							PlaylistPane.setProgressBarItemValue(o);
+						}
+						progress++;
+						PlaylistPane.setProgressBarValue(progress);
+					}
+
+					//Songs in folders
+					System.out.println("Current folder count:"+folders.size());
+					for (File path : folders) {
+						File[] songs;
+
 						songs = FileUtils.getExcludedFiles(path, ".mp3");
+						
+						if (songs.length != 0) {
+							PlaylistPane.setProgressBarItemMax(songs.length);
+						}
+
+						printWriter.println(SEPARATOR+DIRECTORYHEADER + path.getAbsolutePath());
+						for (int o = 0; o < songs.length; o++) {
+							long length = FileUtils.getSongLength(songs[o]);
+							songLengths += length;
+							songCount++;
+							System.out.println("log: "+songs[o].getAbsolutePath());
+							printWriter.println(songs[o].getName() + " " + length);
+							PlaylistPane.setProgressBarItemValue(o);
+						}
+						progress++;
+						PlaylistPane.setProgressBarValue(progress);
 					}
+					PlaylistPane.disableProgressBar();
+					printWriter.close();
+
+					String fileName = playlistFile.getName();
+					fileName = fileName.substring(0, fileName.lastIndexOf(".plp"));
+					PlaylistHeader ph = new PlaylistHeader(fileName, 0, songLengths, songCount);
+					appendFirstLine(playlistFile, ph.toString());
 					
-					
-					if (songs.length != 0) {
-						PlaylistPane.setProgressBarItemMax(songs.length);
-					}
-
-					printWriter.println(SEPARATOR+DIRECTORYHEADER + path.getAbsolutePath());
-					for (int o = 0; o < songs.length; o++) {
-
-						long length = FileUtils.getSongLength(songs[o]);
-
-						songLengths += length;
-						songCount++;
-						printWriter.println(songs[o].getName() + " " + length);
-						PlaylistPane.setProgressBarItemValue(o);
-					}
-					progress++;
-					PlaylistPane.setProgressBarValue(progress);
-				}
-				PlaylistPane.disableProgressBar();
-				printWriter.close();
-
-				String fileName = file.getName();
-				fileName = fileName.substring(0, fileName.lastIndexOf(".plp"));
-				PlaylistHeader ph = new PlaylistHeader(fileName, 0, songLengths, songCount);
-				appendFirstLine(file, ph.toString());
+					PlaylistPane.folderTable.data.add(ph.getPlaylistObject());
 				
-				PlaylistPane.folderTable.data.add(ph.getPlaylistObject());
+				}catch(Exception e){
+					PlaylistPane.disableProgressBar();
+					if(printWriter != null)printWriter.close();
+				}
 			}
 		}.start();
 
 		return true;
 	}
 
+	public static void createFolderPlaylists(File[] folders){
+		for(File f : folders){
+			if(f.isDirectory()){
+				File[] tempFile = {f};//creates temp file to use the function which requires file array input
+				System.out.println("Creating folder playlist: "+f.getName()+" "+tempFile[0].getAbsolutePath());
+				createPlaylist(f.getName(), tempFile);
+			}
+		}
+	}
 	// Playlist merger
 	public static void createCustomPlaylist(String name, String[] playlists) {
 		Set<String> foldersUsed = new TreeSet<String>(new StringComparator());
@@ -263,13 +296,11 @@ public class PlaylistWriter {
 		return true;
 	}
 
-	// FIX header issues not loading first song
 	// First line is playlist info header
 	public static String[] readPlaylist(String name) {
 		File tFile = new File(getWorkingDir().getAbsolutePath() + "\\" + name + ".plp");
 		String song;
 		ArrayList<String> songs = new ArrayList<String>();
-
 		if (tFile.exists()) {
 
 			try {
@@ -295,7 +326,6 @@ public class PlaylistWriter {
 				e.printStackTrace();
 			}
 		}
-
 		String[] rSongs = songs.toArray(new String[songs.size()]);
 		return rSongs;
 	}
