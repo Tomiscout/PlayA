@@ -22,6 +22,8 @@ import javafx.scene.control.TabPane.TabClosingPolicy;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
+import javafx.scene.control.ContextMenu;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
@@ -32,6 +34,7 @@ import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.DataFormat;
 import javafx.scene.input.Dragboard;
+import javafx.scene.input.MouseButton;
 import javafx.scene.input.TransferMode;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -53,8 +56,7 @@ public class PlaylistPane extends VBox {
 	static double maxItemProgress;
 
 	static boolean isFinished;
-	private int buttonWidth = 64;
-
+	
 	@SuppressWarnings("unchecked")
 	public PlaylistPane() {
 		tablePane = new TabPane();
@@ -62,19 +64,29 @@ public class PlaylistPane extends VBox {
 
 		Tab foldersTab = new Tab("Folders");
 		Tab customTab = new Tab("Custom");
+		
+		PlaylistContextMenuLocal localContext = new PlaylistContextMenuLocal();
 
 		folderTable = new PlaylistTable();
 		customTable = new PlaylistTable();
 
 		BorderPane folderTablePane = new BorderPane();
 
-		folderTablePane.setCenter(tablePane);
+		folderTablePane.setCenter(folderTable);
 
-		foldersTab.setContent(folderTable);
+		foldersTab.setContent(folderTablePane);		
 		customTab.setContent(customTable);
 
 		tablePane.getTabs().addAll(foldersTab, customTab);
 
+		folderTable.setOnMousePressed(e -> {
+			if(e.getButton() == MouseButton.SECONDARY && !getCurrentSelectedItems().isEmpty()){
+				localContext.show(folderTable, e.getScreenX(), e.getScreenY());
+			}else{
+				localContext.hide();
+			}
+		});
+		
 		// ProgressBar
 		bar = new ProgressBar(0);
 		bar.setMaxWidth(Double.MAX_VALUE);
@@ -83,34 +95,7 @@ public class PlaylistPane extends VBox {
 
 		BorderPane topPane = new BorderPane();
 
-		// Buttons
-		Button newPlaylist = new Button("New");
-		Button customPlaylist = new Button("Custom");
-		Button renamePlaylist = new Button("Rename");
-		Button delPlaylist = new Button("Delete");
-
-		newPlaylist.setOnAction(e -> {
-
-		});
-		customPlaylist.setOnAction(e -> {
-
-		});
-
-		renamePlaylist.setOnAction(e -> {
-			RenamePlaylist();
-		});
-
-		delPlaylist.setOnAction(e -> {
-			DeletePlaylists();
-		});
-
 		HBox bottomButtons = new HBox();
-		bottomButtons.getChildren().addAll(newPlaylist, customPlaylist, renamePlaylist, delPlaylist);
-		topPane.setBottom(bottomButtons);
-
-		newPlaylist.setPrefWidth(buttonWidth);
-		customPlaylist.setPrefWidth(buttonWidth);
-		delPlaylist.setPrefWidth(buttonWidth);
 
 		setSpacing(5);
 		setPadding(new Insets(10, 0, 0, 10));
@@ -159,73 +144,6 @@ public class PlaylistPane extends VBox {
 
 		}
 
-	}
-
-	public static void DeletePlaylists() {
-		Alert alert = new Alert(AlertType.CONFIRMATION);
-		alert.setTitle("Playlist deletion");
-		alert.setHeaderText("Are you sure?");
-		ObservableList<PlaylistObject> list = getCurrentSelectedItems();
-		PlaylistTable currentTable = getCurrentTable();
-
-		if (list != null) {
-			alert.setContentText("Do you want to delete " + list.size() + " playlist(s)?");
-
-			for (PlaylistObject po : list) {
-				String s = po.getName();
-				Optional<ButtonType> result = alert.showAndWait();
-				if (result.get() == ButtonType.OK) {
-					// Makes correct filename for deletion
-					String fName;
-					if (s.endsWith(".plp")) {
-						fName = workingDir + "\\" + s;
-					} else {
-						fName = workingDir + "\\" + s + ".plp";
-					}
-
-					File delFile = new File(fName);
-					if (delFile.exists()) {
-						delFile.delete();
-						System.out.println("Deleted playlist: " + s);
-					} else {
-						System.out.println("Couldn't find playlist for deletion: " + delFile.getAbsolutePath());
-					}
-
-					currentTable.data.remove(po);// Deleting from the table
-				}
-			}
-		}
-	}
-
-	public static void RenamePlaylist() {
-		PlaylistObject selectedObj = getCurrentSelectedItem();
-		if (selectedObj != null) {
-			File playlistFile = new File(workingDir.getAbsolutePath() + "\\" + selectedObj.getName() + ".plp");
-			if (!playlistFile.exists())
-				return;
-
-			TextInputDialog dialog = new TextInputDialog();
-			dialog.setTitle("Playlist name");
-			dialog.setContentText("Enter playlist name: ");
-
-			// Gets input result and loops if filename is not allowed
-			boolean nameLoop = true;
-			Optional<String> result = null;
-			while (nameLoop) {
-				nameLoop = false;
-				result = dialog.showAndWait();
-				if (result.isPresent()) {
-					if (!FileUtils.isNameCorrect(result.get())) {
-						nameLoop = true;
-					}
-				}
-			}
-
-			if (result.isPresent()) {
-				playlistFile.renameTo(new File(playlistFile.getParent() + "\\" + result.get() + ".plp"));
-				reloadPlaylists();
-			}
-		}
 	}
 
 	public static PlaylistTable getCurrentTable() {
@@ -354,4 +272,24 @@ public class PlaylistPane extends VBox {
 		bar.setManaged(false);
 	}
 
+	//ContextMenu class
+	public class PlaylistContextMenuLocal extends ContextMenu{
+		public PlaylistContextMenuLocal(){
+			
+			MenuItem itemOpen = new MenuItem("Open");
+			itemOpen.setOnAction(e -> PlaylistController.OpenSelectedPlaylists());
+			
+			MenuItem itemDelete = new MenuItem("Delete");
+			itemDelete.setOnAction(e -> PlaylistController.DeleteSelectedPlaylists());
+			
+			MenuItem itemRename = new MenuItem("Rename");
+			itemRename.setOnAction(e -> PlaylistController.RenamePlaylist());
+			
+			MenuItem itemRescan = new MenuItem("Rescan");
+			itemRescan.setOnAction(e -> PlaylistController.RescanSelectedPlaylists());
+			
+			getItems().addAll(itemOpen, itemDelete, itemRename, itemRescan);
+		}
+	}
+	
 }

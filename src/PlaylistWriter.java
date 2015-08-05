@@ -3,6 +3,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
@@ -19,61 +20,64 @@ import java.util.TreeSet;
 
 import javax.swing.tree.TreePath;
 
+import javafx.collections.ObservableList;
 
 public class PlaylistWriter {
 
+	static ArrayList<File> playlistQueue = new ArrayList<File>();
+	public static Thread fileThread;
 	protected static PrintWriter printWriter;
 	static int progress;
 	public static final String SEPARATOR = "¥";
+	public static final String ROOTHEADER = "root:";
 	public static final String DIRECTORYHEADER = "dir:";
 	public static final String LENGTHHEADER = "length:";
 	public static final String TYPEHEADER = "type:";
 	public static final String URLHEADER = "url:";
 	public static final String SONGCOUNTHEADER = "count:";
+	private static File rootFolder;
 
-	//FIXME bug when creating folder playlists
+	// FIXME bug when creating folder playlists
 	public static boolean createPlaylist(String inputName, File[] files) {
-		System.out.println("Creating playlist with input:"+files.length);
-		if(inputName == null || inputName.equals("")) return false;
+		System.out.println("Creating playlist with input:" + files.length);
+		if (inputName == null || inputName.equals("") || files == null)
+			return false;
 		printWriter = null;
 
-		String name;
-		if(inputName.endsWith(".plp")){
-			name = inputName;
-		}else{
-			name = inputName+".plp";
+		if (files.length != 0) {
+			rootFolder = files[0].getParentFile();
+		} else {
+			System.out.println("Empty input array!");
+			return false;
 		}
-		
+
+		if (!rootFolder.exists()) {
+			System.out.println("Root folder doesn't exist");
+			return false;
+		}
+
+		String name;
+		if (inputName.endsWith(".plp")) {
+			name = inputName;
+		} else {
+			name = inputName + ".plp";
+		}
+
 		File playlistFile = new File(getWorkingDir().getAbsolutePath() + "\\" + name);
 		playlistFile.getParentFile().mkdirs();
 
 		ArrayList<File> rootFiles = new ArrayList<File>();
-		ArrayList<File> folders = new ArrayList<File>();
-		for(File f : files){
-			if(f.isDirectory()){
-				File[] treePaths = FileUtils.getSubFolders(f);
-				for (File p : treePaths) {
-					folders.add(p);
-				}
-			}else if(f.isFile()){
+		for (File f : files) {
+			if (f.isFile()) {
 				rootFiles.add(f);
-			}else{
-				System.out.println("This shouldnt be here "+f.getAbsolutePath());
 			}
 		}
-
-		File[] rootSongs = FileUtils.filterFilesByExtention(rootFiles, ".mp3");
-		int rootFilesIndicator = 0;
-		if(rootSongs.length>0)rootFilesIndicator=1;
-		// Enables progressbar
-		PlaylistPane.enableProgressBar(folders.size()+rootFilesIndicator);
-		progress = 0;
 
 		new Thread() {
 			public void run() {
 				int songLengths = 0;
 				int songCount = 0;
-				try{
+				try {
 					try {
 						printWriter = new PrintWriter(playlistFile, "UTF-8");
 					} catch (FileNotFoundException e) {
@@ -81,11 +85,35 @@ public class PlaylistWriter {
 					} catch (UnsupportedEncodingException e) {
 						System.out.println("Unsupported Encoding in PlaylistWriter.createPlaylist");
 					}
-					
-					//Root folder songs
-					if(rootSongs.length>0){
+
+					ArrayList<File> folders = new ArrayList<File>();
+
+					for (File f : files) {
+						if (f.isDirectory()) {
+							File[] treePaths = FileUtils.getSubFolders(f);
+							for (File p : treePaths) {
+								folders.add(p);
+							}
+						}
+					}
+
+					File[] rootSongs = FileUtils.filterFilesByExtention(rootFiles, ".mp3");
+					int rootFilesIndicator = 0;
+					if (rootSongs.length > 0)
+						rootFilesIndicator = 1;
+
+					// RootFolder
+					printWriter.println(SEPARATOR + ROOTHEADER + rootFolder.getAbsolutePath());
+
+					// Enables progressbar
+					PlaylistPane.enableProgressBar(folders.size() + rootFilesIndicator);
+					progress = 0;
+
+					// Root folder songs
+					if (rootSongs.length > 0) {
 						PlaylistPane.setProgressBarItemMax(rootSongs.length);
-						printWriter.println(SEPARATOR+DIRECTORYHEADER + rootSongs[0].getParentFile().getAbsolutePath());
+						printWriter
+								.println(SEPARATOR + DIRECTORYHEADER + rootSongs[0].getParentFile().getAbsolutePath());
 						for (int o = 0; o < rootSongs.length; o++) {
 							long length = FileUtils.getSongLength(rootSongs[o]);
 							songLengths += length;
@@ -97,23 +125,22 @@ public class PlaylistWriter {
 						PlaylistPane.setProgressBarValue(progress);
 					}
 
-					//Songs in folders
-					System.out.println("Current folder count:"+folders.size());
+					// Songs in folders
 					for (File path : folders) {
 						File[] songs;
 
 						songs = FileUtils.getExcludedFiles(path, ".mp3");
-						
 						if (songs.length != 0) {
 							PlaylistPane.setProgressBarItemMax(songs.length);
 						}
 
-						printWriter.println(SEPARATOR+DIRECTORYHEADER + path.getAbsolutePath());
+						printWriter.println(SEPARATOR + DIRECTORYHEADER + path.getAbsolutePath());
 						for (int o = 0; o < songs.length; o++) {
 							long length = FileUtils.getSongLength(songs[o]);
 							songLengths += length;
 							songCount++;
-							System.out.println("log: "+songs[o].getAbsolutePath());
+							// System.out.println("writer: " +
+							// songs[o].getAbsolutePath());
 							printWriter.println(songs[o].getName() + " " + length);
 							PlaylistPane.setProgressBarItemValue(o);
 						}
@@ -127,28 +154,42 @@ public class PlaylistWriter {
 					fileName = fileName.substring(0, fileName.lastIndexOf(".plp"));
 					PlaylistHeader ph = new PlaylistHeader(fileName, 0, songLengths, songCount);
 					appendFirstLine(playlistFile, ph.toString());
-					
+
 					PlaylistPane.folderTable.data.add(ph.getPlaylistObject());
-				
-				}catch(Exception e){
+
+				} catch (Exception e) {
+					e.printStackTrace();
 					PlaylistPane.disableProgressBar();
-					if(printWriter != null)printWriter.close();
+					if (printWriter != null)
+						printWriter.close();
 				}
+				createNextPlaylist();
 			}
 		}.start();
 
 		return true;
 	}
 
-	public static void createFolderPlaylists(File[] folders){
-		for(File f : folders){
-			if(f.isDirectory()){
-				File[] tempFile = {f};//creates temp file to use the function which requires file array input
-				System.out.println("Creating folder playlist: "+f.getName()+" "+tempFile[0].getAbsolutePath());
-				createPlaylist(f.getName(), tempFile);
+	public static void createFolderPlaylists(File[] folders) {
+		for (File f : folders) {
+			if (f.isDirectory()) {
+				playlistQueue.add(f);
 			}
 		}
+		createNextPlaylist();
 	}
+
+	public static void createNextPlaylist() {
+		if (!playlistQueue.isEmpty()) {
+			File[] tempFile = { playlistQueue.get(0) };// creates temp file to
+														// use the function
+														// which requires file
+														// array input
+			playlistQueue.remove(0);
+			createPlaylist(tempFile[0].getName(), tempFile);
+		}
+	}
+
 	// Playlist merger
 	public static void createCustomPlaylist(String name, String[] playlists) {
 		Set<String> foldersUsed = new TreeSet<String>(new StringComparator());
@@ -169,7 +210,7 @@ public class PlaylistWriter {
 						playlistLenghts.add(line);
 					}
 					while ((line = br.readLine()) != null) {
-						if (line.startsWith(SEPARATOR+DIRECTORYHEADER)) {
+						if (line.startsWith(SEPARATOR + DIRECTORYHEADER)) {
 							// Checks for duplicates
 							if (!foldersUsed.add(line)) {
 								duplicates.add(line);
@@ -198,7 +239,7 @@ public class PlaylistWriter {
 						isSaving = true;
 						continue;
 					}
-					if (content.get(i).startsWith(SEPARATOR+DIRECTORYHEADER) && isSaving == true) {
+					if (content.get(i).startsWith(SEPARATOR + DIRECTORYHEADER) && isSaving == true) {
 						if (!content.get(i).equals(s)) {
 							isSaving = false;// If same folder header occurs
 												// again ignore
@@ -224,7 +265,7 @@ public class PlaylistWriter {
 					if (content.get(i).equals(s)) {
 						// Remove lines until other playlistheader occured
 						content.remove(i);
-						while (!content.get(i).startsWith(SEPARATOR+DIRECTORYHEADER)) {
+						while (!content.get(i).startsWith(SEPARATOR + DIRECTORYHEADER)) {
 							content.remove(i);
 						}
 						isDeleted = true;
@@ -295,10 +336,20 @@ public class PlaylistWriter {
 
 		return true;
 	}
+	
+	//Converts playlist name to file
+	public static File getPlaylistFile(String name){
+		File playlist = new File(getWorkingDir().getAbsolutePath() + "\\" + name + ".plp");
+		if(playlist.exists()) return playlist;
+		else {
+			System.out.println("Playlist file doesn't exist."+playlist.getAbsolutePath());
+			return null;
+		}
+	}
 
 	// First line is playlist info header
 	public static String[] readPlaylist(String name) {
-		File tFile = new File(getWorkingDir().getAbsolutePath() + "\\" + name + ".plp");
+		File tFile = getPlaylistFile(name);
 		String song;
 		ArrayList<String> songs = new ArrayList<String>();
 		if (tFile.exists()) {
@@ -310,7 +361,7 @@ public class PlaylistWriter {
 				String currentDir = "";
 
 				while ((song = br.readLine()) != null) {
-					if (song.startsWith(SEPARATOR+DIRECTORYHEADER)) {
+					if (song.startsWith(SEPARATOR + DIRECTORYHEADER)) {
 						currentDir = song.substring(5);
 						continue;
 					}
@@ -332,6 +383,47 @@ public class PlaylistWriter {
 
 	public static int getCurrentProgress() {
 		return progress;
+	}
+
+	//removes line STARTING with lineToRemove
+	public static boolean removeLineFromFile(File inputFile, String lineToRemove) {
+		if(!inputFile.isFile()) {
+			System.out.println("Input file not found in removeLineFromFile() "+inputFile.getAbsolutePath());
+			return false;
+		}
+		
+		File tempFile = new File(inputFile.getAbsolutePath()+".temp");
+
+		BufferedReader reader = null;
+		BufferedWriter writer = null;
+		try {
+			reader = new BufferedReader(new FileReader(inputFile));
+			writer = new BufferedWriter(new FileWriter(tempFile));
+		} catch (IOException ioe) {
+			ioe.printStackTrace();
+		}
+
+		String currentLine;
+
+		try {
+			while ((currentLine = reader.readLine()) != null) {
+				// trim newline when comparing with lineToRemove
+				String trimmedLine = currentLine.trim();
+				if (trimmedLine.startsWith(lineToRemove))
+					continue;
+				writer.write(currentLine + System.getProperty("line.separator"));
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		try {
+			writer.close();
+			reader.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		return tempFile.renameTo(inputFile);
 	}
 
 	public static void appendFirstLine(File f, String line) {
@@ -357,32 +449,72 @@ public class PlaylistWriter {
 		}
 
 	}
-	public static int getPlaylistLength(File playlist){
-		
+
+	public static int getPlaylistLength(File playlist) {
+
 		String line = FileUtils.getFirstLine(playlist);
-		if(line == null) return 0;
-	
-		//TODO when expanding header extract the number only
-		//String number = line.substring(0, line.indexOf(" "));
-		
+		if (line == null)
+			return 0;
+
 		int n;
-		try{
+		try {
 			n = Integer.parseInt(line);
-		}catch(NumberFormatException e){
-			//Weird bug when line starts with "?", occurs when created files manually
-			try{
+		} catch (NumberFormatException e) {
+			// Weird bug when line starts with "?", occurs when created files
+			// manually
+			try {
 				n = Integer.parseInt(line.substring(1));
-			}catch(NumberFormatException e2){
+			} catch (NumberFormatException e2) {
 				n = 0;
-			}			
+			}
 		}
 		return n;
 	}
-	
-	public static File getWorkingDir(){
-		File workingDir = new File(FileUtils.getWorkDirectory()+"playlists\\");
-		if(!workingDir.exists()) workingDir.mkdirs();
+
+	public static File getWorkingDir() {
+		File workingDir = new File(FileUtils.getWorkDirectory() + "playlists\\");
+		if (!workingDir.exists())
+			workingDir.mkdirs();
 		return workingDir;
 	}
-	
+
+	public static void rescanPlaylist(PlaylistObject po) {
+		File tFile = new File(getWorkingDir().getAbsolutePath() + "\\" + po.getName() + ".plp");
+		ArrayList<File> folders = new ArrayList<File>();
+		String rootDir;
+
+		if (tFile.exists()) {
+			try {
+				// Reads in UTF-8
+				BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(tFile), "UTF-8"));
+
+				String line;
+				String rootHeader = SEPARATOR + ROOTHEADER;
+				String dirHeader = SEPARATOR + DIRECTORYHEADER;
+				while ((line = br.readLine()) != null) {
+					if (line.startsWith(rootHeader)) {
+						rootDir = line.substring(rootHeader.length());
+						System.out.println(line + ">>>" + rootDir);
+					} else if (line.startsWith(dirHeader)) {
+						folders.add(new File(line.substring(dirHeader.length())));
+					}
+				}
+
+				br.close();
+
+			} catch (IOException e) {
+				e.printStackTrace();
+			} finally {
+				tFile.delete();
+				PlaylistPane.getCurrentTable().data.remove(po);// Deleting from
+																// the table
+				File[] folderArray = folders.toArray(new File[folders.size()]);
+				if (folderArray.length > 0) {
+					createPlaylist(po.getName(), folderArray);
+				} else {
+					System.out.println("File array is empty in rescanPlaylist()");
+				}
+			}
+		}
+	}
 }

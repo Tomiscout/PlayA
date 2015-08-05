@@ -11,19 +11,20 @@ public class FXMediaPlayer {
 	private static double Volume = 1.0;
 	static MediaPlayer player;
 	static boolean isPaused = false;
+	static File currentSong;
 
-	public static void play(String fn) {
+	public static void play(File song) {
 		if (isPaused) {
 			isPaused = false;
 			player.play();
 		} else {
 			// Checks if file exists
-			File song = new File(fn);
 			if (!song.exists()) {
-				System.out.println("Song doesn't exist! " + fn);
+				System.out.println("Song doesn't exist! " + song.getAbsolutePath());
 				return;
 			}
-
+			currentSong = song;
+			
 			Media media = new Media(song.toURI().toString());
 			player = new MediaPlayer(media);
 			player.currentTimeProperty().addListener(new ChangeListener<Duration>() {
@@ -67,6 +68,7 @@ public class FXMediaPlayer {
 	public static void dispose() {
 		if (player != null)
 			player.dispose();
+			player = null;
 	}
 
 	public static boolean isNull() {
@@ -78,5 +80,8 @@ public class FXMediaPlayer {
 		if (!isNull()) {
 			player.setVolume(d);
 		}
+	}
+	public static File getCurrentSong(){
+		return currentSong;
 	}
 }

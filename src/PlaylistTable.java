@@ -1,5 +1,6 @@
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
@@ -15,7 +16,7 @@ public class PlaylistTable extends TableView{
 		setMaxWidth(260);
 		setMaxHeight(800);
 		setPrefHeight(800);
-
+		getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 
 		TableColumn<PlaylistObject, String> nameColumn = new TableColumn("Name");
 		nameColumn.setMaxWidth(224);

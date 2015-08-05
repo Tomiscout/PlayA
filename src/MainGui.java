@@ -1,14 +1,26 @@
+import java.awt.Desktop;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.Optional;
+
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Label;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.Slider;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
+import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.input.MouseButton;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -17,49 +29,27 @@ import javafx.scene.text.Text;
 
 public class MainGui extends HBox {
 
-	TableView<SongObject> table;
 	static Slider seekBar;
-	public static ObservableList<SongObject> data = FXCollections.observableArrayList();
+	static SongTable table;
 	static Label songLabel = null;
 	private static boolean isSeeking = false;
 	private boolean isShrinked = false;
-	
+
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public MainGui() {
-		
+
 		getStylesheets().add("MainTheme.css");
+
+		SongContextMenu songContext = new SongContextMenu();
+
 		// TableView
-		table = new TableView();
-		table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-		table.setPrefHeight(4068);
-		table.setPrefWidth(4068);
-		table.setEditable(false);
-		table.setItems(data);
-
-		// TableColumns
-		TableColumn<SongObject, String> nameColumn = new TableColumn("Name");
-		nameColumn.setPrefWidth(380);
-		nameColumn.setMinWidth(160);
-		nameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
-
-		TableColumn<SongObject, String> lengthColumn = new TableColumn("Length");
-		lengthColumn.setMaxWidth(69);
-		lengthColumn.setMinWidth(48);
-		lengthColumn.setCellValueFactory(new PropertyValueFactory<>("length"));
-
-		table.getColumns().addAll(nameColumn, lengthColumn);
-
-		// Double click listener
-		table.setRowFactory(tv -> {
-			TableRow<SongObject> row = new TableRow<>();
-			row.setOnMouseClicked(event -> {
-				if (event.getClickCount() == 2 && (!row.isEmpty())) {
-					SongObject rowData = row.getItem();
-					PlaylistController.playSongFilename(PlaylistController.getSongFilepath(rowData.getName()));
-					setSongName(rowData.getName());
-				}
-			});
-			return row;
+		table = new SongTable();
+		table.setOnMousePressed(e -> {
+			if (e.getButton() == MouseButton.SECONDARY && !table.getSelectionModel().getSelectedItems().isEmpty()) {
+				songContext.show(table, e.getScreenX(), e.getScreenY());
+			} else {
+				songContext.hide();
+			}
 		});
 
 		// Adds center pane
@@ -97,8 +87,8 @@ public class MainGui extends HBox {
 		seekBar.setMin(0);
 		seekBar.setMax(100);
 		seekBar.setValue(1.0);
-		seekBar.setPadding(new Insets(5,0,4,0));
-		
+		seekBar.setPadding(new Insets(5, 0, 4, 0));
+
 		seekBar.setOnMousePressed(e -> {
 			isSeeking = true;
 		});
@@ -112,25 +102,14 @@ public class MainGui extends HBox {
 		volumeBar.setMax(1);
 		volumeBar.setValue(1);
 		volumeBar.setPrefWidth(100);
-		volumeBar.setPadding(new Insets(5,0,4,0));
+		volumeBar.setPadding(new Insets(5, 0, 4, 0));
 		volumeBar.valueProperty().addListener(e -> {
 			FXMediaPlayer.setVolume(volumeBar.getValue());
 		});
 
 		// Play
 		Button playBtn = new Button(">");
-		playBtn.setOnAction(e -> {
-			if(PlaylistController.currentSong == null){
-			SongObject selected = table.getSelectionModel().getSelectedItem();
-
-			if (selected == null)
-				return;
-
-			PlaylistController.playSongFilename(PlaylistController.getSongFilepath(selected.getName()));
-			}else{
-				PlayerController.play(PlaylistController.currentSong);
-			}
-		});
+		playBtn.setOnAction(e -> PlaySelectedSong());
 
 		// Pause
 		Button pauseBtn = new Button("❙❙");
@@ -157,22 +136,21 @@ public class MainGui extends HBox {
 		});
 
 		//
-		Button shrinkBtn = new Button("卍");
+		Button shrinkBtn = new Button("卐");
 		shrinkBtn.setOnAction(e -> {
 			rightPane.setManaged(isShrinked);
 			rightPane.setVisible(isShrinked);
 
 			if (isShrinked) {
-				shrinkBtn.setText("卍");
+				shrinkBtn.setText("卐");
 				Main.pStage.setWidth(Main.pStage.getWidth() + rightPane.getWidth());
 			} else {
-				shrinkBtn.setText("☭");
+				shrinkBtn.setText("卍");
 				Main.pStage.setWidth(Main.pStage.getWidth() - rightPane.getWidth());
 			}
 
 			isShrinked = !isShrinked;
 		});
-
 
 		playerPane.getChildren().addAll(playBtn, pauseBtn, stopBtn, nextBtn, previousBtn, seekBar, volumeBar,
 				shrinkBtn);
@@ -183,10 +161,26 @@ public class MainGui extends HBox {
 
 		PlaylistPane playlistPane = new PlaylistPane();
 
-		optionPane.setPadding(new Insets(4,0,0,10));
+		optionPane.setPadding(new Insets(4, 0, 0, 10));
 		rightPane.getChildren().addAll(playlistPane, optionPane);
 
 		getChildren().addAll(centerPane, rightPane);
+	}
+
+	private static SongObject GetSelectedSong() {
+		SongObject item = (SongObject) table.getSelectionModel().getSelectedItem();
+		return (SongObject) table.getSelectionModel().getSelectedItem();
+	}
+
+	private static ObservableList<SongObject> GetSelectedSongs() {
+		return table.getSelectionModel().getSelectedItems();
+	}
+
+	private static void PlaySelectedSong() {
+		SongObject selected = GetSelectedSong();
+		if (selected != null) {
+			PlaylistController.playSongFilename(PlaylistController.getSongFilepath(selected.getName()));
+		}
 	}
 
 	public static void setSongName(String s) {
@@ -196,5 +190,83 @@ public class MainGui extends HBox {
 	public static void setSeekValue(double d) {
 		if (!isSeeking)
 			seekBar.setValue(d);
+	}
+
+	private static void deleteSongFromPlaylist(SongObject po) {
+		PlaylistWriter.removeLineFromFile(PlaylistWriter.getPlaylistFile(po.getPlaylist()), po.getFile().getAbsolutePath());
+		table.data.remove(po);
+	}
+
+	// ContextMenu classes
+	public class SongContextMenu extends ContextMenu {
+		public SongContextMenu() {
+			Alert alert = new Alert(AlertType.CONFIRMATION);
+			alert.setTitle("Song deletion");
+			alert.setHeaderText("Are you sure?");
+
+			MenuItem itemOpen = new MenuItem("Play");
+			itemOpen.setOnAction(e -> PlaySelectedSong());
+
+			MenuItem itemContainingFolder = new MenuItem("Open containing folder");
+			itemContainingFolder.setOnAction(e -> {
+				File songFile = GetSelectedSong().getFile();
+				if(songFile.exists()){
+					try {
+						Desktop.getDesktop().open(songFile.getParentFile());
+					} catch (Exception e1) {
+						e1.printStackTrace();
+						System.out.println("Can't open containing folder");
+					}
+				}else{
+					System.out.println(songFile.getAbsolutePath()+" doesn't exist");
+				}
+				
+
+			});
+
+			MenuItem itemDelete = new MenuItem("Delete from playlist");
+			itemDelete.setOnAction(e -> {
+				ObservableList<SongObject> list = GetSelectedSongs();
+				if (list.size() > 1) {
+					alert.setContentText("Do you want to delete " + list.size() + "songs from playlist?");
+				} else if (!list.isEmpty()) {
+					alert.setContentText("Do you want to delete " + list.get(0).getName() + " from playlist?");
+				}
+
+				Optional<ButtonType> result = alert.showAndWait();
+
+				if (result.get() == ButtonType.OK) {
+					deleteSongFromPlaylist(GetSelectedSong());
+				}
+			});
+
+			MenuItem itemDeleteFile = new MenuItem("Delete File");
+			itemDeleteFile.setOnAction(e -> {
+				ObservableList<SongObject> list = GetSelectedSongs();
+				if (list.size() > 1) {
+					alert.setContentText("Do you want to delete " + list.size() + "songs?");
+				} else if (!list.isEmpty()) {
+					alert.setContentText("Do you want to delete " + list.get(0).getName() + " ?");
+				}
+				Optional<ButtonType> result = alert.showAndWait();
+
+				if (result.get() == ButtonType.OK) {
+					for (SongObject so : list) {
+						try{
+							File songFile = so.getFile();
+							if(FXMediaPlayer.getCurrentSong().equals(so.getFile())) FXMediaPlayer.dispose();
+							Files.delete(songFile.toPath());
+						}catch(IOException ioe){
+							System.out.println("File is already in use, can't delete!");
+							so.getFile().deleteOnExit();
+						}
+						deleteSongFromPlaylist(so);
+						System.out.println("Deleted "+so.getFile().getAbsolutePath());
+					}
+				}
+			});
+
+			getItems().addAll(itemOpen, itemContainingFolder, itemDelete, itemDeleteFile);
+		}
 	}
 }

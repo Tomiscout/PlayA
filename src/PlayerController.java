@@ -1,14 +1,16 @@
+import java.io.File;
+
 public class PlayerController {
 
-	public static void play(String fn) {	
+	public static void play(File file) {	
 		//If player is paused
 		if(FXMediaPlayer.isPaused){
-			FXMediaPlayer.play(""); //Sends empty string because it is ignored
+			FXMediaPlayer.play(null); //Sends empty string because it is ignored
 			return;
 		}
 		
 		FXMediaPlayer.dispose();
-		FXMediaPlayer.play(fn);
+		FXMediaPlayer.play(file);
 	}
 
 	public static void pause() {
@@ -21,7 +23,7 @@ public class PlayerController {
 	
 	public static void parseMediaKey(){
 		if(FXMediaPlayer.isPaused){
-			FXMediaPlayer.play("");
+			FXMediaPlayer.play(null);
 		}else{
 			FXMediaPlayer.pause();
 		}
