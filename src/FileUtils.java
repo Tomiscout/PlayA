@@ -2,6 +2,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -12,6 +13,9 @@ import javax.swing.filechooser.FileSystemView;
 import org.jaudiotagger.audio.AudioFile;
 import org.jaudiotagger.audio.AudioFileIO;
 import org.jaudiotagger.tag.TagException;
+
+import javafx.scene.image.Image;
+
 import org.jaudiotagger.audio.AudioHeader;
 import org.jaudiotagger.audio.exceptions.CannotReadException;
 import org.jaudiotagger.audio.exceptions.InvalidAudioFrameException;
@@ -24,6 +28,7 @@ public class FileUtils {
 	static String[] forbiddenNames = { "CON", "PRN", "AUX", "CLOCK$", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5",
 			"COM6", "COM7", "COM8", "COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9", };
 	static ImageIcon[] rootIcons = new ImageIcon[2];
+	static final String ASSETSFOLDER = "assets/";
 	static FileSystemView fsv = FileSystemView.getFileSystemView();
 	private static String workingDir = System.getenv("APPDATA") + "\\Tomiscout\\PlayA\\";
 
@@ -61,7 +66,7 @@ public class FileUtils {
 		File f = new File(path);
 		if (f.exists()) {
 			if (!f.isDirectory()) {
-				return path + "¥" + f.length();
+				return path + "ï¿½" + f.length();
 			} else {
 				System.out.println("F is directory");
 				return path;
@@ -224,5 +229,16 @@ public class FileUtils {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
+	
+	public static Image getAssetsImage(String name){
+		System.out.println("Loading assets image: "+ASSETSFOLDER+name);
+		InputStream stream = FileUtils.class.getResourceAsStream(ASSETSFOLDER+name);
+		if(stream == null) {
+			System.out.println("asset image stream is null!");
+			return null;
+		}
+		Image image = new Image(stream);
+		return image;
 	}
 }
