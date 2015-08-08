@@ -15,11 +15,9 @@ import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.Slider;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableRow;
-import javafx.scene.control.TableView;
+import javafx.scene.control.Tooltip;
 import javafx.scene.control.Alert.AlertType;
-import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseButton;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
@@ -62,8 +60,11 @@ public class MainGui extends HBox {
 
 		VBox topPane = new VBox();
 
-		GridPane optionPane = new GridPane();
-
+		Button ytbDownloaderBtn = new Button("Open Youtube downloader");
+		ytbDownloaderBtn.setOnAction(e -> {
+			
+		});
+		
 		// Playing options
 		ObservableList<String> options = FXCollections.observableArrayList("Normal", "Shuffle");
 		final ComboBox comboBox = new ComboBox(options);
@@ -71,8 +72,6 @@ public class MainGui extends HBox {
 		comboBox.valueProperty().addListener((ov, s, s1) -> {
 			PlaylistController.setPlayingMode((String) s1);
 		});
-		optionPane.add(new Text("Playing mode "), 0, 0);
-		optionPane.add(comboBox, 1, 0);
 
 		songLabel = new Label("Sng name");
 		songLabel.setFont(new Font("Impact", 18));
@@ -108,29 +107,39 @@ public class MainGui extends HBox {
 		});
 
 		// Play
-		Button playBtn = new Button(">");
+		Button playBtn = new Button();
+		playBtn.setGraphic(new ImageView(FileUtils.getAssetsImage("play.png")));
+		playBtn.setTooltip(new Tooltip("Play"));
 		playBtn.setOnAction(e -> PlaySelectedSong());
 
 		// Pause
-		Button pauseBtn = new Button("❙❙");
+		Button pauseBtn = new Button();
+		pauseBtn.setGraphic(new ImageView(FileUtils.getAssetsImage("pause.png")));
+		pauseBtn.setTooltip(new Tooltip("Pause"));
 		pauseBtn.setOnAction(e -> {
 			PlayerController.pause();
 		});
 
 		// Stop
-		Button stopBtn = new Button("■");
+		Button stopBtn = new Button();
+		stopBtn.setGraphic(new ImageView(FileUtils.getAssetsImage("stop.png")));
+		stopBtn.setTooltip(new Tooltip("Stop"));
 		stopBtn.setOnAction(e -> {
 			PlayerController.stop();
 		});
 
 		// Next
-		Button nextBtn = new Button(">>");
+		Button nextBtn = new Button();
+		nextBtn.setGraphic(new ImageView(FileUtils.getAssetsImage("next.png")));
+		nextBtn.setTooltip(new Tooltip("Next"));
 		nextBtn.setOnAction(e -> {
 			PlaylistController.playNextSong();
 		});
 
 		// Previous
-		Button previousBtn = new Button("<<");
+		Button previousBtn = new Button();
+		previousBtn.setGraphic(new ImageView(FileUtils.getAssetsImage("previous.png")));
+		previousBtn.setTooltip(new Tooltip("Previous"));
 		previousBtn.setOnAction(e -> {
 			PlaylistController.playPreviousSong();
 		});
@@ -161,17 +170,17 @@ public class MainGui extends HBox {
 
 		PlaylistPane playlistPane = new PlaylistPane();
 
-		optionPane.setPadding(new Insets(4, 0, 0, 10));
-		rightPane.getChildren().addAll(playlistPane, optionPane);
+		rightPane.getChildren().addAll(comboBox, playlistPane, ytbDownloaderBtn);
 
 		getChildren().addAll(centerPane, rightPane);
 	}
 
 	private static SongObject GetSelectedSong() {
 		SongObject item = (SongObject) table.getSelectionModel().getSelectedItem();
-		return (SongObject) table.getSelectionModel().getSelectedItem();
+		return item;
 	}
 
+	@SuppressWarnings("unchecked")
 	private static ObservableList<SongObject> GetSelectedSongs() {
 		return table.getSelectionModel().getSelectedItems();
 	}
@@ -194,9 +203,13 @@ public class MainGui extends HBox {
 
 	private static void deleteSongFromPlaylist(SongObject po) {
 		PlaylistWriter.removeLineFromFile(PlaylistWriter.getPlaylistFile(po.getPlaylist()), po.getFile().getAbsolutePath());
-		table.data.remove(po);
+		table.getData().remove(po);
 	}
 
+	public static SongTable getSongTable(){
+		return table;
+	}
+	
 	// ContextMenu classes
 	public class SongContextMenu extends ContextMenu {
 		public SongContextMenu() {

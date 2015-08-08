@@ -1,37 +1,16 @@
 import java.io.File;
-import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Optional;
-import javax.swing.JPanel;
-import javax.swing.SwingUtilities;
-
-import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.embed.swing.SwingNode;
 import javafx.geometry.Insets;
-import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.TabPane.TabClosingPolicy;
-import javafx.scene.control.Button;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.CheckBox;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableRow;
-import javafx.scene.control.TableView;
-import javafx.scene.control.TextInputDialog;
-import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.DataFormat;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.MouseButton;
@@ -39,11 +18,10 @@ import javafx.scene.input.TransferMode;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
-@SuppressWarnings("rawtypes")
 public class PlaylistPane extends VBox {
 
 	static PlaylistTable folderTable;
-	static PlaylistTable customTable;
+	static PlaylistTable youtubeTable;
 
 	static Stage PlaylistCreationStage;
 
@@ -63,21 +41,22 @@ public class PlaylistPane extends VBox {
 		tablePane.setTabClosingPolicy(TabClosingPolicy.UNAVAILABLE);
 
 		Tab foldersTab = new Tab("Folders");
-		Tab customTab = new Tab("Custom");
+		Tab youtubeTab = new Tab("Youtube");
 		
 		PlaylistContextMenuLocal localContext = new PlaylistContextMenuLocal();
 
 		folderTable = new PlaylistTable();
-		customTable = new PlaylistTable();
+		youtubeTable = new PlaylistTable();
 
 		BorderPane folderTablePane = new BorderPane();
+		VBox youtubeTablePane = new VBox();
 
 		folderTablePane.setCenter(folderTable);
 
 		foldersTab.setContent(folderTablePane);		
-		customTab.setContent(customTable);
+		youtubeTab.setContent(youtubeTablePane);
 
-		tablePane.getTabs().addAll(foldersTab, customTab);
+		tablePane.getTabs().addAll(foldersTab, youtubeTab);
 
 		folderTable.setOnMousePressed(e -> {
 			if(e.getButton() == MouseButton.SECONDARY && !getCurrentSelectedItems().isEmpty()){
@@ -87,6 +66,10 @@ public class PlaylistPane extends VBox {
 			}
 		});
 		
+		
+		
+		youtubeTablePane.getChildren().addAll(youtubeTable);
+		
 		// ProgressBar
 		bar = new ProgressBar(0);
 		bar.setMaxWidth(Double.MAX_VALUE);
@@ -94,8 +77,6 @@ public class PlaylistPane extends VBox {
 		disableProgressBar();
 
 		BorderPane topPane = new BorderPane();
-
-		HBox bottomButtons = new HBox();
 
 		setSpacing(5);
 		setPadding(new Insets(10, 0, 0, 10));
@@ -124,7 +105,7 @@ public class PlaylistPane extends VBox {
 
 	// Loads playlists, hardcoded
 	public static void reloadPlaylists() {
-		PlaylistTable[] pt = { folderTable, customTable };
+		PlaylistTable[] pt = { folderTable, youtubeTable };
 		for (PlaylistTable t : pt) {
 			ObservableList<PlaylistObject> data = t.data;
 			if (data != null)
@@ -137,7 +118,7 @@ public class PlaylistPane extends VBox {
 			if (header.getType() == 0) {
 				folderTable.data.add(header.getPlaylistObject());
 			} else if (header.getType() == 1) {
-				customTable.data.add(header.getPlaylistObject());
+				youtubeTable.data.add(header.getPlaylistObject());
 			} else if (header.getType() == 2) {
 
 			}
@@ -154,7 +135,7 @@ public class PlaylistPane extends VBox {
 				if (name.equals("Folders")) {
 					return folderTable;
 				} else if (name.equals("Custom")) {
-					return customTable;
+					return youtubeTable;
 				}
 			}
 		}

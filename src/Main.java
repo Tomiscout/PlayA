@@ -6,7 +6,6 @@ import com.melloware.jintellitype.JIntellitype;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
-import javafx.scene.image.Image;
 import javafx.stage.Stage;
 
 public class Main extends Application {
@@ -26,7 +25,7 @@ public class Main extends Application {
 			MainGui gui = new MainGui();
 
 			primaryStage.setTitle("PlayA");
-			primaryStage.getIcons().add(new Image(Main.class.getResourceAsStream("Icon.png")));
+			primaryStage.getIcons().add(FileUtils.getAssetsImage("Icon.png"));
 			scene = new Scene(gui, 800, 530);
 			primaryStage.setScene(scene);
 			primaryStage.show();
@@ -62,7 +61,7 @@ public class Main extends Application {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		File newLauncher = new File(FileUtils.getWorkDirectory() + "\\PlayA.jar");
+		File newLauncher = new File(FileUtils.getWorkDirectory() + "\\"+launcherFile.getName());
 		FileUtils.copyFile(launcherFile, newLauncher);
 	}
 }

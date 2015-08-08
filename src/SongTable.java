@@ -7,7 +7,7 @@ import javafx.scene.control.cell.PropertyValueFactory;
 
 public class SongTable extends TableView {
 	
-	public static ObservableList<SongObject> data = FXCollections.observableArrayList();
+	private static ObservableList<SongObject> data = FXCollections.observableArrayList();
 	
 	public SongTable() {
 		setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
@@ -40,5 +40,9 @@ public class SongTable extends TableView {
 			});
 			return row;
 		});
+	}
+	
+	public static ObservableList<SongObject> getData(){
+		return data;
 	}
 }

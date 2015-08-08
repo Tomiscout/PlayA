@@ -20,13 +20,13 @@ public class PlaylistController {
 
 		String[] songs = PlaylistWriter.readPlaylist(name);
 		currentSongs.clear();
-		SongTable.data.clear();
+		SongTable.getData().clear();
 
 		for (String song : songs) {
 			File songFile = new File(song);
 			int length = Integer.parseInt((song.substring(song.lastIndexOf(".mp3") + 5)));
 
-			SongTable.data.add(new SongObject(songFile, FileUtils.formatSeconds(length), name));
+			SongTable.getData().add(new SongObject(songFile, FileUtils.formatSeconds(length), name));
 			currentSongs.add(new File(song.substring(0, song.lastIndexOf(".mp3") + 4)));
 		}
 
@@ -35,14 +35,14 @@ public class PlaylistController {
 	// loads few playlists
 	public static void openPlaylist(String[] names) {
 		currentSongs.clear();
-		SongTable.data.clear();
+		SongTable.getData().clear();
 
 		for (String name : names) {
 			String[] songs = PlaylistWriter.readPlaylist(name);
 			for (String song : songs) {
 				File songFile = new File(song);
 				int length = Integer.parseInt((song.substring(song.lastIndexOf(".mp3") + 5)));
-				SongTable.data.add(new SongObject(songFile, FileUtils.formatSeconds(length), name));
+				SongTable.getData().add(new SongObject(songFile, FileUtils.formatSeconds(length), name));
 				currentSongs.add(new File(song.substring(0, song.lastIndexOf(".mp3") + 4)));
 			}
 		}
