@@ -4,9 +4,12 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Optional;
 
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
+import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
@@ -24,6 +27,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
+import javafx.stage.Stage;
 
 public class MainGui extends HBox {
 
@@ -32,6 +36,8 @@ public class MainGui extends HBox {
 	static Label songLabel = null;
 	private static boolean isSeeking = false;
 	private boolean isShrinked = false;
+
+	private static Stage downloaderStage;
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public MainGui() {
@@ -62,9 +68,9 @@ public class MainGui extends HBox {
 
 		Button ytbDownloaderBtn = new Button("Open Youtube downloader");
 		ytbDownloaderBtn.setOnAction(e -> {
-			
+			displayDownloader();
 		});
-		
+
 		// Playing options
 		ObservableList<String> options = FXCollections.observableArrayList("Normal", "Shuffle");
 		final ComboBox comboBox = new ComboBox(options);
@@ -202,14 +208,15 @@ public class MainGui extends HBox {
 	}
 
 	private static void deleteSongFromPlaylist(SongObject po) {
-		PlaylistWriter.removeLineFromFile(PlaylistWriter.getPlaylistFile(po.getPlaylist()), po.getFile().getAbsolutePath());
+		PlaylistWriter.removeLineFromFile(PlaylistWriter.getPlaylistFile(po.getPlaylist()),
+				po.getFile().getAbsolutePath());
 		table.getData().remove(po);
 	}
 
-	public static SongTable getSongTable(){
+	public static SongTable getSongTable() {
 		return table;
 	}
-	
+
 	// ContextMenu classes
 	public class SongContextMenu extends ContextMenu {
 		public SongContextMenu() {
@@ -223,17 +230,16 @@ public class MainGui extends HBox {
 			MenuItem itemContainingFolder = new MenuItem("Open containing folder");
 			itemContainingFolder.setOnAction(e -> {
 				File songFile = GetSelectedSong().getFile();
-				if(songFile.exists()){
+				if (songFile.exists()) {
 					try {
 						Desktop.getDesktop().open(songFile.getParentFile());
 					} catch (Exception e1) {
 						e1.printStackTrace();
 						System.out.println("Can't open containing folder");
 					}
-				}else{
-					System.out.println(songFile.getAbsolutePath()+" doesn't exist");
+				} else {
+					System.out.println(songFile.getAbsolutePath() + " doesn't exist");
 				}
-				
 
 			});
 
@@ -265,21 +271,31 @@ public class MainGui extends HBox {
 
 				if (result.get() == ButtonType.OK) {
 					for (SongObject so : list) {
-						try{
+						try {
 							File songFile = so.getFile();
-							if(FXMediaPlayer.getCurrentSong().equals(so.getFile())) FXMediaPlayer.dispose();
+							if (FXMediaPlayer.getCurrentSong().equals(so.getFile()))
+								FXMediaPlayer.dispose();
 							Files.delete(songFile.toPath());
-						}catch(IOException ioe){
+						} catch (IOException ioe) {
 							System.out.println("File is already in use, can't delete!");
 							so.getFile().deleteOnExit();
 						}
 						deleteSongFromPlaylist(so);
-						System.out.println("Deleted "+so.getFile().getAbsolutePath());
+						System.out.println("Deleted " + so.getFile().getAbsolutePath());
 					}
 				}
 			});
 
 			getItems().addAll(itemOpen, itemContainingFolder, itemDelete, itemDeleteFile);
 		}
+	}
+
+	public static void displayDownloader() {
+		downloaderStage = new Stage();
+		YoutubeDownloaderUI ui = new YoutubeDownloaderUI();
+		Scene downloaderScene = new Scene(ui, 512,512);
+		
+		downloaderStage.setScene(downloaderScene);
+		downloaderStage.show();
 	}
 }
