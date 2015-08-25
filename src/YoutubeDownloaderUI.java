@@ -102,7 +102,7 @@ public class YoutubeDownloaderUI extends BorderPane {
 				e1.printStackTrace();
 			}
 			System.out.println("Clipboard:" + clipboard);
-			YoutubeDownloadManager.parseLink(clipboard);
+			YtDownloadUtils.parseLink(clipboard);
 		});
 
 		buttonPane.getChildren().addAll(pasteBtn, infoLabel);
@@ -110,8 +110,8 @@ public class YoutubeDownloaderUI extends BorderPane {
 		setCenter(itemView);
 		setBottom(buttonPane);
 		
-		itemList.add(new ListItem("sajjjjjjjjjj", 1));
-		itemList.add(new ListItem("sasfdfs", 55));
+		//Starts main downloader thread
+		new DownloadThreadManager();
 	}
 
 	public static void WriteInfo(String i) {
@@ -138,6 +138,7 @@ public class YoutubeDownloaderUI extends BorderPane {
 		public ListItem(String name, int songCount) {
 			this.name = name;
 			this.songCount = songCount;
+			id = provideListItemId();
 		}
 
 		public int getDownloadedSongCount() {
@@ -205,6 +206,7 @@ public class YoutubeDownloaderUI extends BorderPane {
 					File defaultDirectory = new File("c:/");
 					chooser.setInitialDirectory(defaultDirectory);
 					File selectedDirectory = chooser.showDialog(downloadOptionsWindow);
+					tf.setText(selectedDirectory.getAbsolutePath());
 				});
 				
 				Button downloadButton = new Button("Download");
@@ -224,7 +226,7 @@ public class YoutubeDownloaderUI extends BorderPane {
 							}
 						}else{
 							//Add to download quota
-							DownloadThreadManager.addToQueue(videoId, tempFile);
+							DownloadThreadManager.addToQueue(new DownloadThreadManager.YoutubeVideo("le neim", videoId), tempFile);
 						}
 						closeDownloadOptions();
 					}else{
@@ -296,6 +298,7 @@ public class YoutubeDownloaderUI extends BorderPane {
 		ProgressIndicatorBar(int totalWork) {
 			this.totalWork = totalWork;
 			bar.setMaxWidth(Double.MAX_VALUE);
+			bar.setProgress(0);
 
 			getChildren().setAll(bar, text);
 		}
@@ -307,15 +310,8 @@ public class YoutubeDownloaderUI extends BorderPane {
 		//How many items completed
 		public void setWorkDone(int workDone) {
 			this.workDone = workDone;
-
+			bar.setProgress(workDone/totalWork);
 			text.setText(workDone + "/" + totalWork);
-		}
-
-		//One item progress
-		public void setItemProgress(double progress){
-			double singleItemValue = 1/totalWork;
-			double position = (double)(singleItemValue*workDone+ singleItemValue*progress);
-			bar.setProgress(position);
 		}
 		
 		public double getTotalWork() {
