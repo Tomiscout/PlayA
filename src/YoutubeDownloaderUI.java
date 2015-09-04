@@ -1,10 +1,12 @@
 import java.awt.Toolkit;
 import java.awt.datatransfer.DataFlavor;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Vector;
 
-import javafx.beans.property.ReadOnlyDoubleProperty;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
+import com.sun.prism.paint.Color;
+
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
@@ -20,22 +22,25 @@ import javafx.scene.control.ProgressBar;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleGroup;
+import javafx.scene.layout.Background;
+import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
+import javafx.stage.DirectoryChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.util.Callback;
-import javafx.stage.DirectoryChooser;
 
 public class YoutubeDownloaderUI extends BorderPane {
-	static ObservableList<ListItem> itemList = FXCollections.observableArrayList();
-	private static int listIdCount = 0;
+	static ArrayList<ListItem> itemList = new ArrayList<ListItem>();
+	static ObservableList<ListItem> visibleList = FXCollections.observableArrayList();
 	
 	ListView itemView;
 	HBox buttonPane;
@@ -43,46 +48,53 @@ public class YoutubeDownloaderUI extends BorderPane {
 	static Stage downloadOptionsWindow;
 
 	public YoutubeDownloaderUI() {
-		getStylesheets().add("DownloaderTheme.css");
-		itemView = new ListView(itemList);
+		//getStylesheets().add("DownloaderTheme.css");
+		itemView = new ListView(visibleList);
 		itemView.setSelectionModel(new DisabledSelectionModel<ListItem>());
-
+		itemView.setMaxHeight(Double.MAX_VALUE);
 		itemView.setCellFactory(new Callback<ListView<ListItem>, ListCell<ListItem>>() {
 			@Override
 			public ListCell<ListItem> call(ListView<ListItem> param) {
 				ListCell<ListItem> cell = new ListCell<ListItem>() {
 					@Override
-					public void updateItem(ListItem item, boolean empty) {
+					protected void updateItem(ListItem item, boolean empty) {
 						super.updateItem(item, empty);
 						if (item != null) {
-							setMinHeight(48);
+							if(empty || item == null){
+								setGraphic(null);
+							}else{
+								GridPane cellContent = new GridPane();
+								ColumnConstraints column1 = new ColumnConstraints(100, 100, Double.MAX_VALUE);
+								column1.setHgrow(Priority.ALWAYS);
+								ColumnConstraints column2 = new ColumnConstraints(130);
+								cellContent.getColumnConstraints().addAll(column1, column2); // first
+																								// column
+																								// gets
+																								// any
+																								// extra
+																								// width
+								//cellContent.setMinHeight(32);
+								cellContent.setAlignment(Pos.CENTER_LEFT);
 
-							GridPane cellContent = new GridPane();
-							ColumnConstraints column1 = new ColumnConstraints(100, 100, Double.MAX_VALUE);
-							column1.setHgrow(Priority.ALWAYS);
-							ColumnConstraints column2 = new ColumnConstraints(130);
-							cellContent.getColumnConstraints().addAll(column1, column2); // first
-																							// column
-																							// gets
-																							// any
-																							// extra
-																							// width
-							cellContent.setMinHeight(32);
-							cellContent.setAlignment(Pos.CENTER_LEFT);
+								Label nameLabel = new Label(item.getName());
+								nameLabel.setFont(new Font("Tahoma", 16));
 
-							Label nameLabel = new Label(item.getName());
-							nameLabel.setFont(new Font("Tahoma", 16));
+								
+								ProgressIndicatorBar bar = item.getBar();
+								bar.setMinWidth(64);
+								bar.setMinHeight(cellContent.getHeight());
+								
+								//bar.setTotalWork(item.getBar().getTotalWork());
+								//bar.setWorkDone(item.getDownloadedSongCount());
+								
 
-							ProgressIndicatorBar bar = new ProgressIndicatorBar(item.getSongCount());
-							bar.setMinWidth(64);
-							bar.setMinHeight(cellContent.getHeight());
-							bar.setWorkDone(item.getDownloadedSongCount());
+								nameLabel.setMaxWidth(itemView.getWidth() - bar.getWidth());
 
-							nameLabel.setMaxWidth(itemView.getWidth() - bar.getWidth());
-
-							cellContent.add(nameLabel, 0, 0);
-							cellContent.add(bar, 1, 0);
-							setGraphic(cellContent);
+								cellContent.add(nameLabel, 0, 0);
+								cellContent.add(bar, 1, 0);
+								setGraphic(cellContent);
+							}
+							
 						}
 					}
 				};
@@ -113,14 +125,16 @@ public class YoutubeDownloaderUI extends BorderPane {
 		//Starts main downloader thread
 		new DownloadThreadManager();
 	}
-
+	
 	public static void WriteInfo(String i) {
 		infoLabel.setText(i);
 	}
 
-	private static int provideListItemId(){
-		listIdCount++;
-		return listIdCount;
+	public static synchronized ListItem getListItem(int id){
+		for(ListItem item : itemList){
+			if(item.getId() == id) return item;
+		}
+		return null;
 	}
 	
 	static class ListItem {
@@ -128,25 +142,30 @@ public class YoutubeDownloaderUI extends BorderPane {
 		private String name;
 		private int songCount;
 		private int downloadedSongCount = 0;
-
-		public ListItem(String name) {
+		private boolean hidden = false;
+		ProgressIndicatorBar bar;
+		
+		public ListItem(String name, int id, boolean hidden) {
 			this.name = name;
 			this.songCount = 1;
-			id = provideListItemId();
-		}
-
-		public ListItem(String name, int songCount) {
-			this.name = name;
-			this.songCount = songCount;
-			id = provideListItemId();
+			this.id = id;
+			this.hidden = hidden;
+			this.bar = new ProgressIndicatorBar();
 		}
 
 		public int getDownloadedSongCount() {
 			return downloadedSongCount;
 		}
+		public ProgressIndicatorBar getBar(){
+			return bar;
+		}
 
-		public void setDownloadedSongCount(int downloadedSongCount) {
-			this.downloadedSongCount = downloadedSongCount;
+		public void plusDownloaded() {
+			downloadedSongCount++;
+			bar.setWorkDone(downloadedSongCount);
+			if(downloadedSongCount >= songCount){
+				//TODO completed download
+			}
 		}
 
 		public String getName() {
@@ -160,15 +179,43 @@ public class YoutubeDownloaderUI extends BorderPane {
 		public int getId(){
 			return id;
 		}
+
+		public boolean isHidden() {
+			return hidden;
+		}
+
+		public void setHide(boolean hidden) {
+			this.hidden = hidden;
+		}
 	}
 	
-	public static ListItem getListItem(int id){
-		for(ListItem item : itemList){
-			if(item.getId() == id){
-				return item;
+	public static synchronized void addListItem(String name, int id, boolean hide){
+		itemList.add(new ListItem(name, id, hide));
+	}
+	
+	//Recalculates visible list items
+	public static void refreshList(){
+		Platform.runLater(new Runnable(){
+			@Override
+			public void run() {
+				visibleList.clear();
+				for(ListItem item : itemList){
+					if(!item.isHidden()){
+						visibleList.add(item);
+					}
+				}
 			}
-		}
-		return null;
+		});
+		
+	}
+	
+	public static synchronized void setBarProgress(ProgressBar bar, double progress){
+		Platform.runLater(new Runnable(){
+			@Override
+			public void run() {
+				bar.setProgress(progress);
+			}
+		});
 	}
 
 	public static void displayDownloadOptions(String videoId, String playlistId) {
@@ -212,8 +259,7 @@ public class YoutubeDownloaderUI extends BorderPane {
 				Button downloadButton = new Button("Download");
 				downloadButton.setMaxWidth(Double.MAX_VALUE);
 				downloadButton.setOnAction(e -> {
-					System.out.println("*downloads*");
-					
+
 					File tempFile = new File(tf.getText());
 					if(tempFile.exists() && tempFile.isDirectory()){
 						if(rb1.isSelected()){
@@ -287,18 +333,17 @@ public class YoutubeDownloaderUI extends BorderPane {
 	}
 
 	class ProgressIndicatorBar extends StackPane {
-		private int workDone = 0;
-		private int totalWork;
+		private double workDone;
+		private double totalWork = -1;
 
 		final private ProgressBar bar = new ProgressBar();
 		final private Text text = new Text();
 
 		final private static int DEFAULT_LABEL_PADDING = 5;
 
-		ProgressIndicatorBar(int totalWork) {
-			this.totalWork = totalWork;
+		ProgressIndicatorBar() {
 			bar.setMaxWidth(Double.MAX_VALUE);
-			bar.setProgress(0);
+			setWorkDone(0);
 
 			getChildren().setAll(bar, text);
 		}
@@ -308,10 +353,15 @@ public class YoutubeDownloaderUI extends BorderPane {
 		}
 
 		//How many items completed
-		public void setWorkDone(int workDone) {
-			this.workDone = workDone;
-			bar.setProgress(workDone/totalWork);
-			text.setText(workDone + "/" + totalWork);
+		public void setWorkDone(double workDone) {
+			if(totalWork != -1){
+				this.workDone = workDone;
+				YoutubeDownloaderUI.setBarProgress(bar, workDone/totalWork);
+				text.setText((int)workDone + "/" + (int)totalWork);
+			}else{
+				bar.setProgress(-1);
+				text.setText("Please wait...");
+			}
 		}
 		
 		public double getTotalWork() {
@@ -320,6 +370,10 @@ public class YoutubeDownloaderUI extends BorderPane {
 
 		public void setTotalWork(int totalWork) {
 			this.totalWork = totalWork;
+		}
+		
+		public void setProgress(double progress){
+			bar.setProgress(progress);
 		}
 	}
 	
