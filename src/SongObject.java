@@ -10,7 +10,7 @@ public class SongObject {
 	public SongObject(File file, String length, String playlist){
 		String filePath = file.getAbsolutePath();
 		this.file = new File(filePath.substring(0, filePath.lastIndexOf(".mp3")+4));
-		if(this.file == null) return;
+		if(file == null) return;
 		this.length = length;
 		this.playlist = playlist;
 		this.name = file.getAbsolutePath();

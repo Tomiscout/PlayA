@@ -1,6 +1,26 @@
 import java.io.File;
+import java.io.IOException;
 import java.net.URISyntaxException;
+import java.security.PrivateKey;
 
+import com.google.api.services.youtube.model.PlaylistItem;
+import com.google.api.services.youtube.model.PlaylistItemListResponse;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+import com.google.api.client.auth.oauth2.Credential;
+import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
+import com.google.api.client.googleapis.json.GoogleJsonResponseException;
+import com.google.api.client.http.HttpRequestInitializer;
+import com.google.api.client.http.HttpTransport;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.JsonFactory;
+import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.client.util.Lists;
+import com.google.api.services.youtube.YouTube;
+import com.google.api.services.youtube.model.Playlist;
 import com.melloware.jintellitype.JIntellitype;
 
 import javafx.application.Application;
@@ -47,7 +67,6 @@ public class Main extends Application {
 	@Override
 	public void stop() {
 		JIntellitype.getInstance().cleanUp();
-		DownloadThreadManager.stopThreads();
 	}
 
 	public static Stage getPrimaryStage() {

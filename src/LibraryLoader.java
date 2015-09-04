@@ -25,7 +25,6 @@ public class LibraryLoader {
 				exportedLib = ExportLibrary("JIntellitype.dll");
 			}
 			JIntellitype.setLibraryLocation(exportedLib);
-			//System.loadLibrary("/lib/libxuggle-5.dll");
 
 		} catch (Exception e) {
 			e.printStackTrace();

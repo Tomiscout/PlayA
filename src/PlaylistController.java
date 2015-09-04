@@ -5,9 +5,9 @@ import java.util.Random;
 
 import javafx.collections.ObservableList;
 import javafx.scene.control.Alert;
-import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.TextInputDialog;
+import javafx.scene.control.Alert.AlertType;
 
 public class PlaylistController {
 	static ArrayList<File> currentSongs = new ArrayList<File>();
@@ -66,25 +66,25 @@ public class PlaylistController {
 						randomNum = rand.nextInt(currentSongs.size());
 
 						int previousLoop = 0;
-						if (previousSongs.size() > 5)
-							previousLoop = previousSongs.size();
+						if (previousSongs.size() > 4)
+							previousLoop = previousSongs.size() - 1;
 						for (int i = previousSongs.size() - 1; i >= previousLoop; i--) {
 							if (previousSongs.get(i).equals(currentSongs.get(randomNum))) {
 								isSame = true;
 								break;
 							}
 						}
-						System.out.println(isSame);
 					} while (isSame);
 				else {
 					randomNum = rand.nextInt(currentSongs.size());
 				}
+				File song = currentSongs.get(randomNum);
+				previousSongs.add(song);
+				playSong(song);
 			} else {
-				randomNum = rand.nextInt(currentSongs.size());
+
 			}
-			File song = currentSongs.get(randomNum);
-			previousSongs.add(song);
-			playSong(song);
+
 		} else {
 			for (int i = 0; i < currentSongs.size(); i++) {
 				if (currentSongs.get(i).equals(currentSong)) {
@@ -94,7 +94,6 @@ public class PlaylistController {
 						return;
 					} else {
 						previousSongs.add(currentSong);
-						
 						playSong(currentSongs.get(i + 1));
 						return;
 					}

@@ -7,19 +7,19 @@ import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-
 import javax.swing.ImageIcon;
 import javax.swing.filechooser.FileSystemView;
 
 import org.jaudiotagger.audio.AudioFile;
 import org.jaudiotagger.audio.AudioFileIO;
+import org.jaudiotagger.tag.TagException;
+
+import javafx.scene.image.Image;
+
 import org.jaudiotagger.audio.AudioHeader;
 import org.jaudiotagger.audio.exceptions.CannotReadException;
 import org.jaudiotagger.audio.exceptions.InvalidAudioFrameException;
 import org.jaudiotagger.audio.exceptions.ReadOnlyFileException;
-import org.jaudiotagger.tag.TagException;
-
-import javafx.scene.image.Image;
 
 public class FileUtils {
 
@@ -34,16 +34,6 @@ public class FileUtils {
 
 	public static String getWorkDirectory() {
 		return workingDir;
-	}
-	public static String truncateFileType(String p){
-		int indexOfPeriod = p.lastIndexOf(".");
-		String truncated;
-		
-		if(indexOfPeriod < 0) return p;
-		else{
-			return p.substring(0, indexOfPeriod);
-		}
-		
 	}
 
 	public static boolean isNameCorrect(String str) {
