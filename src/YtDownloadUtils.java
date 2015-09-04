@@ -1,25 +1,14 @@
-import java.io.BufferedInputStream;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLConnection;
-import java.nio.channels.Channels;
-import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.youtube.YouTube;
-import com.google.api.services.youtube.model.Playlist;
 import com.google.api.services.youtube.model.PlaylistItem;
 import com.google.api.services.youtube.model.PlaylistItemListResponse;
 
@@ -129,7 +118,6 @@ public class YtDownloadUtils {
 			// the application more efficient. See:
 			// https://developers.google.com/youtube/v3/getting-started#partial
 			playlistItemRequest.setFields("items(contentDetails/videoId,snippet/title),nextPageToken");
-			System.out.println(playlistItemRequest.getUriTemplate());
 			String nextToken = "";
 
 			// Call the API one or more times to retrieve all items in the
@@ -190,8 +178,8 @@ public class YtDownloadUtils {
 		private URL MP4Link;
 		
 		//Dirty way of getting source info
-		public KeepVidSource(String source){
-			int dlPlace = source.indexOf("<div id=\"dl\">", 22000);
+		public KeepVidSource(String source, String debug){
+			int dlPlace = source.indexOf("<div id=\"dl\">");
 			if(dlPlace == -1) return;
 			String workableSource = source.substring(dlPlace);
 			int workableEndPlace = workableSource.indexOf("<ul class=\"switches\">");
@@ -210,7 +198,7 @@ public class YtDownloadUtils {
 					}
 
 				} else {
-					System.out.println("Bad website source! Can't find link place!");
+					System.out.println("Bad website source! Can't find link place! || "+debug+" ||");
 					return;
 				}
 				
@@ -225,7 +213,7 @@ public class YtDownloadUtils {
 					}
 
 				} else {
-					System.out.println("Bad website source! Can't find link place!");
+					System.out.println("Bad website source! Can't find link place! || "+debug+" ||");
 					return;
 				}
 			}catch(MalformedURLException e){

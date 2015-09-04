@@ -43,7 +43,6 @@ public class FXMediaPlayer {
 			
 			player.setVolume(Volume);
 			player.play();
-
 		}
 	}
 
