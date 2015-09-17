@@ -1,15 +1,14 @@
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
-
-import com.xuggle.mediatool.IMediaReader;
-import com.xuggle.mediatool.IMediaWriter;
-import com.xuggle.mediatool.ToolFactory;
-import com.xuggle.mediatool.IMediaViewer;
 
 public class DownloadThreadManager {
 	static Vector<DownloadTask> downloadTasks = new Vector<DownloadTask>();
@@ -20,7 +19,220 @@ public class DownloadThreadManager {
 	static ArrayList<Thread> threadList = new ArrayList<Thread>();
 	public static boolean fastDownload = false;
 	private static int listIdCount = 0;
+	static File ffmpeg = new File(Main.libDir.getAbsolutePath() + "\\ffmpeg.exe");
 
+	// Main thread for getting
+	public void startMainThread() {
+		isRunning = true;
+		new Thread() {
+			public void run() {
+				while (isRunning) {
+					if (!deletionList.isEmpty()) {
+						for (DownloadTask task : deletionList) {
+							downloadTasks.remove(task);
+						}
+					}
+
+					if (!downloadTasks.isEmpty()) {
+						for (DownloadTask task : downloadTasks) {
+							if (currentThreads <= maxThreads && currentThreads >= 0 && !task.getDownloading()) {
+								task.setDownloading(true);
+								startThread(task);
+							}
+						}
+					}
+
+					try {
+						Thread.sleep(200);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+			}
+		}.start();
+	}
+	
+	public DownloadThreadManager() {
+		startMainThread();
+	}
+
+	public static void stopThreads() {
+		isRunning = false;
+	}
+
+	private void startThread(DownloadTask t) {
+		t.setDownloading(true);
+		Thread thread = new Thread(new DownloadThread(t));
+		thread.start();
+		threadList.add(thread);
+		addCurrentThread(1);
+	}
+
+	class DownloadThread implements Runnable {
+		private DownloadTask task;
+
+		DownloadThread(DownloadTask task) {
+			this.task = task;
+		}
+
+		public DownloadTask getDownloadTask() {
+			return task;
+		}
+
+		public void run() {
+			try {
+				boolean badFirstSource = false; // false if first webpage is
+												// down or can't parse video
+				File dlFile = null;
+				URL dlLink = null;
+				if (fastDownload == false) {
+					String source = NetUtils.getUrlSource(new URL(YtDownloadUtils.KEEPVIDHEADER
+							+ YtDownloadUtils.getYoutubeUrlFromId(task.getVideo().getVideoId())));
+					if (source != null) {
+						YtDownloadUtils.KeepVidSource sourceInfo = new YtDownloadUtils.KeepVidSource(source,
+								task.getVideo().getVideoId());
+						if (sourceInfo.getM4ALink() != null) {
+							// TODO download M4A
+							System.out.println("M4A: " + sourceInfo.getM4ALink());
+							dlFile = new File(
+									task.getDir().getAbsolutePath() + "\\" + task.getVideo().getVideoName() + ".m4a");
+							System.out.println("Dl file: " + dlFile.getAbsolutePath());
+							dlLink = sourceInfo.getM4ALink();
+						} else {
+							badFirstSource = true;
+						}
+					} else {
+						badFirstSource = true;
+					}
+				}
+
+				// Use second mirror
+				if (badFirstSource) {
+					String source = NetUtils.getUrlSource(new URL(YtDownloadUtils.YTBINMP4HEADER
+							+ YtDownloadUtils.getYoutubeUrlFromId(task.getVideo().getVideoId())));
+					if (source != null) {
+						YtDownloadUtils.YoutubeInMp4Source sourceInfo2 = new YtDownloadUtils.YoutubeInMp4Source(source);
+						if (sourceInfo2.getMP4Link() != null) {
+							// TODO download MP4
+							System.out.println("Second mirror MP4: " + sourceInfo2.getMP4Link());
+						} else {
+							YoutubeDownloaderUI.WriteInfo("Can't download video. Both links down");
+							System.out.println(
+									"Both source parsers returned null. Program died of old age.");
+						}
+					}else System.out.println("Can't connect to second host.");
+				}
+				
+				if(dlFile != null && dlLink != null){
+					saveUrlWithProgress(dlFile, dlLink, task.getId());
+					System.out.println("Downloaded "+dlFile.getName());
+
+					convertToMp3(dlFile);//Calls seperate process
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+
+			if (task.isPlaylistTask()) {
+				YoutubeDownloaderUI.getListItem(task.getListPlaylistId()).plusDownloaded();
+			}
+			deletionList.add(task);
+			addCurrentThread(-1);
+		}
+	}
+	
+	//Downloads file and shows progress in YoutubeDownloaderUI.ProgressIndicatorBar by task id
+	public static void saveUrlWithProgress(final File file, final URL url, int id) throws IOException {
+		YoutubeDownloaderUI.ProgressIndicatorBar bar = YoutubeDownloaderUI.getListItem(id).getBar();
+		InputStream is = null;
+		FileOutputStream fout = null;
+		try {
+			URLConnection connection = url.openConnection();
+			connection.connect();
+			
+			int totalSize = connection.getContentLength();
+			
+			is = url.openStream();
+			fout = new FileOutputStream(file);
+
+			int bytesRead = 0;
+			int totalBytesRead = 0;
+			byte[] buffer = new byte[1024];
+
+			int kilobytes = 0;
+			long start = System.nanoTime();
+			while ((bytesRead = is.read(buffer, 0, buffer.length)) > 0) {
+				//TODO on program exit terminate download
+				fout.write(buffer, 0, bytesRead);
+				totalBytesRead += bytesRead;
+				kilobytes++;
+
+
+				double progress = (double) (totalBytesRead) / (double) (totalSize);
+				setBarProgress(bar, progress);
+				
+				// if second elapsed
+				long elapsedTime = System.nanoTime() - start;
+				if ((elapsedTime / 1000000000.0) > 1) {
+					start = System.nanoTime();
+					String progressInfo = String.format("%d% %d Kb\\s", progress*100, kilobytes);
+					setBarText(bar, progressInfo);
+					kilobytes = 0;
+				}
+
+			}
+		} finally {
+			if (is != null) {
+				is.close();
+			}
+			if (fout != null) {
+				fout.close();
+			}
+		}
+	}
+	
+	private synchronized static void setBarText(YoutubeDownloaderUI.ProgressIndicatorBar bar, String text){
+		bar.setText(text);
+	}
+	private synchronized static void setBarProgress(YoutubeDownloaderUI.ProgressIndicatorBar bar, double progress){
+		bar.setRawProgress(progress);
+	}
+
+	private synchronized boolean convertToMp3(File input) {
+		if (ffmpeg.exists() && input.exists())
+		{
+			//Delete existing music file
+			File mp3File = new File(FileUtils.truncateFileType(input.getAbsolutePath())+".mp3");
+			if(!mp3File.delete()){
+				System.out.println("COULDN'T DELETE EXISTING MP3, canceled conversion.");
+				return false;
+			}
+			String command = null;
+			try{
+				// Calls ffmpeg.exe to encode media to 128k mp3
+				command = "\""+ffmpeg.getAbsolutePath() + "\" -i " + "\""+input.getAbsolutePath() + "\" -b 128k -f mp3 \""
+						+mp3File.getAbsolutePath()+"\"";
+				
+				//Executes command
+				Process p = Runtime.getRuntime().exec(command);
+				p.waitFor(); //Waits for process to exit
+				
+				input.delete();//deletes original file
+			}catch(IOException ioe){
+				System.out.println("Failed to execute command "+command);
+				ioe.printStackTrace();
+			}catch(InterruptedException ie){
+				ie.printStackTrace();
+			}
+		}
+		return true;
+	}
+
+	private synchronized void addCurrentThread(int i) {
+		System.out.println("Current threads: "+i+" input: "+i);
+		currentThreads += i;
+	}
+	
 	public static void addToQueue(YoutubeVideo video, File dir) {
 		if (dir.isDirectory()) {
 			downloadTasks.add(new DownloadTask(video, dir));
@@ -43,24 +255,17 @@ public class DownloadThreadManager {
 				int listPlaylistId = provideListItemId();
 				YoutubeDownloaderUI.addListItem(dir.getName(), listPlaylistId, false);
 				YoutubeDownloaderUI.refreshList();
-				
+
 				List<YoutubeVideo> vids = YtDownloadUtils.getVideosFromPlaylist(playlistId);
 
 				YoutubeDownloaderUI.getListItem(listPlaylistId).getBar().setTotalWork(vids.size());
-				
+
 				for (YoutubeVideo v : vids) {
 					addToQueue(v, dir, listPlaylistId);
 				}
 				YoutubeDownloaderUI.refreshList();
 			}
 		}.start();
-	}
-
-	public DownloadThreadManager() {
-		startMainThread();
-	}
-	public static void stopThreads(){
-		isRunning = false;
 	}
 	
 	static class DownloadTask {
@@ -110,157 +315,20 @@ public class DownloadThreadManager {
 			return listId;
 		}
 
-		public boolean isPlaylistTask(){
+		public boolean isPlaylistTask() {
 			return listPlaylistId != -1;
 		}
+
 		public void complete() {
 			complete = true;
 			if (listPlaylistId > 0) {
 				YoutubeDownloaderUI.getListItem(listPlaylistId).plusDownloaded();
 			}
 		}
-		public int getListPlaylistId(){
+
+		public int getListPlaylistId() {
 			return listPlaylistId;
 		}
-	}
-
-	// Main thread for getting
-	public void startMainThread() {
-		
-		File dlFile = new File("M:\\test.m4a");
-		IMediaReader mediaReader = ToolFactory.makeReader(dlFile.getAbsolutePath());
-		// create a media writer
-	    IMediaWriter mediaWriter = 
-	           ToolFactory.makeWriter(FileUtils.truncateFileType(dlFile.getAbsolutePath())+".mp3", mediaReader);
-	    
-	 // add a writer to the reader, to create the output file
-        mediaReader.addListener(mediaWriter);
-        
-        // create a media viewer with stats enabled
-        IMediaViewer mediaViewer = ToolFactory.makeViewer(true);
-        
-        // add a viewer to the reader, to see the decoded media
-        mediaReader.addListener(mediaViewer);
-        System.out.println("Starting transcoding");
-        // read and decode packets from the source file and
-        // and dispatch decoded audio and video to the writer
-        while (mediaReader.readPacket() == null) ;
-        System.out.println("done transcoding");
-        
-		isRunning = true;
-		new Thread() {
-			public void run() {
-				while (isRunning) {
-					if (!deletionList.isEmpty()) {
-						for (DownloadTask task : deletionList) {
-							downloadTasks.remove(task);
-						}
-					}
-
-					if (!downloadTasks.isEmpty()) {
-						for (DownloadTask task : downloadTasks) {
-							if (currentThreads <= maxThreads && currentThreads >= 0 && !task.getDownloading()) {
-								task.setDownloading(true);
-								startThread(task);
-							}
-						}
-					}
-
-					try {
-						Thread.sleep(200);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-				}
-			}
-		}.start();
-	}
-
-	private void startThread(DownloadTask t) {
-		t.setDownloading(true);
-		Thread thread = new Thread(new DownloadThread(t));
-		thread.start();
-		threadList.add(thread);
-		addCurrentThread(1);
-	}
-
-	class DownloadThread implements Runnable {
-		private Thread t;
-		private DownloadTask task;
-
-		DownloadThread(DownloadTask task) {
-			this.task = task;
-		}
-
-		public DownloadTask getDownloadTask() {
-			return task;
-		}
-
-		public void run() {
-			try {
-				boolean badFirstSource = false; // false if first webpage is
-												// down or can't parse video
-				File dlFile;
-				if (fastDownload == false) {
-					String source = NetUtils.getUrlSource(new URL(YtDownloadUtils.KEEPVIDHEADER
-							+ YtDownloadUtils.getYoutubeUrlFromId(task.getVideo().getVideoId())));
-					if (source != null) {
-						YtDownloadUtils.KeepVidSource sourceInfo = new YtDownloadUtils.KeepVidSource(source,
-								task.getVideo().getVideoId());
-						if (sourceInfo.getM4ALink() != null) {
-							// TODO download M4A
-							System.out.println("M4A: "+sourceInfo.getM4ALink());
-							dlFile = new File(task.getDir().getAbsolutePath()+"\\"+task.getVideo().getVideoName()+".mp4");
-							System.out.println("Dl file: "+dlFile.getAbsolutePath());
-							
-							NetUtils.saveUrl(dlFile, sourceInfo.getMP4Link());
-							System.out.println("Downloaded");
-							
-							IMediaReader reader = ToolFactory.makeReader(dlFile.getAbsolutePath());
-							// create a media writer
-						    IMediaWriter mediaWriter = 
-						           ToolFactory.makeWriter(FileUtils.truncateFileType(dlFile.getAbsolutePath())+".mp3", reader);
-
-							System.out.println("converted");
-							
-						} else {
-							badFirstSource = true;
-						}
-					} else {
-						badFirstSource = true;
-					}
-				}
-
-				// Use second mirror
-				if (badFirstSource) {
-					String source = NetUtils.getUrlSource(new URL(YtDownloadUtils.YTBINMP4HEADER
-							+ YtDownloadUtils.getYoutubeUrlFromId(task.getVideo().getVideoId())));
-					if (source != null) {
-						YtDownloadUtils.YoutubeInMp4Source sourceInfo2 = new YtDownloadUtils.YoutubeInMp4Source(source);
-						if (sourceInfo2.getMP4Link() != null) {
-							// TODO download MP4
-							System.out.println("Second mirror MP4: " + sourceInfo2.getMP4Link());
-						} else {
-							YoutubeDownloaderUI.WriteInfo("Can't download video. Both links down");
-							System.out.println(
-									"Both source parsers returned null. Probably of old age. (program too old)");
-						}
-					}
-				}
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-
-			if(task.isPlaylistTask()){
-				YoutubeDownloaderUI.getListItem(task.getListPlaylistId()).plusDownloaded();
-			}
-			deletionList.add(task);
-			addCurrentThread(-1);
-		}
-	}
-
-	private synchronized void addCurrentThread(int i) {
-		currentThreads += i;
 	}
 
 	private synchronized void requiresDeletion(DownloadTask dt) {
