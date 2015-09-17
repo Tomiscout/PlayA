@@ -37,13 +37,11 @@ public class FileUtils {
 	}
 	public static String truncateFileType(String p){
 		int indexOfPeriod = p.lastIndexOf(".");
-		String truncated;
 		
 		if(indexOfPeriod < 0) return p;
 		else{
 			return p.substring(0, indexOfPeriod);
 		}
-		
 	}
 
 	public static boolean isNameCorrect(String str) {
