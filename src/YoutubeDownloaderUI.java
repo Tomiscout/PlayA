@@ -41,14 +41,14 @@ import javafx.util.Callback;
 public class YoutubeDownloaderUI extends BorderPane {
 	static ArrayList<ListItem> itemList = new ArrayList<ListItem>();
 	static ObservableList<ListItem> visibleList = FXCollections.observableArrayList();
-	
+
 	ListView itemView;
 	HBox buttonPane;
 	static Label infoLabel = new Label();
 	static Stage downloadOptionsWindow;
 
 	public YoutubeDownloaderUI() {
-		//getStylesheets().add("DownloaderTheme.css");
+		// getStylesheets().add("DownloaderTheme.css");
 		itemView = new ListView(visibleList);
 		itemView.setSelectionModel(new DisabledSelectionModel<ListItem>());
 		itemView.setMaxHeight(Double.MAX_VALUE);
@@ -60,33 +60,26 @@ public class YoutubeDownloaderUI extends BorderPane {
 					protected void updateItem(ListItem item, boolean empty) {
 						super.updateItem(item, empty);
 						if (item != null) {
-							if(empty || item == null){
+							if (empty || item == null) {
 								setGraphic(null);
-							}else{
+							} else {
 								GridPane cellContent = new GridPane();
 								ColumnConstraints column1 = new ColumnConstraints(100, 100, Double.MAX_VALUE);
 								column1.setHgrow(Priority.ALWAYS);
 								ColumnConstraints column2 = new ColumnConstraints(130);
-								cellContent.getColumnConstraints().addAll(column1, column2); // first
-																								// column
-																								// gets
-																								// any
-																								// extra
-																								// width
-								//cellContent.setMinHeight(32);
+								cellContent.getColumnConstraints().addAll(column1, column2);
+
 								cellContent.setAlignment(Pos.CENTER_LEFT);
 
 								Label nameLabel = new Label(item.getName());
 								nameLabel.setFont(new Font("Tahoma", 16));
 
-								
 								ProgressIndicatorBar bar = item.getBar();
 								bar.setMinWidth(64);
 								bar.setMinHeight(cellContent.getHeight());
-								
-								//bar.setTotalWork(item.getBar().getTotalWork());
-								//bar.setWorkDone(item.getDownloadedSongCount());
-								
+
+								// bar.setTotalWork(item.getBar().getTotalWork());
+								// bar.setWorkDone(item.getDownloadedSongCount());
 
 								nameLabel.setMaxWidth(itemView.getWidth() - bar.getWidth());
 
@@ -94,7 +87,7 @@ public class YoutubeDownloaderUI extends BorderPane {
 								cellContent.add(bar, 1, 0);
 								setGraphic(cellContent);
 							}
-							
+
 						}
 					}
 				};
@@ -121,22 +114,23 @@ public class YoutubeDownloaderUI extends BorderPane {
 
 		setCenter(itemView);
 		setBottom(buttonPane);
-		
-		//Starts main downloader thread
+
+		// Starts main downloader thread
 		new DownloadThreadManager();
 	}
-	
+
 	public static void WriteInfo(String i) {
 		infoLabel.setText(i);
 	}
 
-	public static synchronized ListItem getListItem(int id){
-		for(ListItem item : itemList){
-			if(item.getId() == id) return item;
+	public static synchronized ListItem getListItem(int id) {
+		for (ListItem item : itemList) {
+			if (item.getId() == id)
+				return item;
 		}
 		return null;
 	}
-	
+
 	static class ListItem {
 		private int id;
 		private String name;
@@ -144,7 +138,7 @@ public class YoutubeDownloaderUI extends BorderPane {
 		private int downloadedSongCount = 0;
 		private boolean hidden = false;
 		ProgressIndicatorBar bar;
-		
+
 		public ListItem(String name, int id, boolean hidden) {
 			this.name = name;
 			this.songCount = 1;
@@ -156,15 +150,16 @@ public class YoutubeDownloaderUI extends BorderPane {
 		public int getDownloadedSongCount() {
 			return downloadedSongCount;
 		}
-		public ProgressIndicatorBar getBar(){
+
+		public ProgressIndicatorBar getBar() {
 			return bar;
 		}
 
 		public void plusDownloaded() {
 			downloadedSongCount++;
 			bar.setWorkDone(downloadedSongCount);
-			if(downloadedSongCount >= songCount){
-				//TODO completed download
+			if (downloadedSongCount >= songCount) {
+				// TODO completed download
 			}
 		}
 
@@ -175,8 +170,8 @@ public class YoutubeDownloaderUI extends BorderPane {
 		public int getSongCount() {
 			return songCount;
 		}
-		
-		public int getId(){
+
+		public int getId() {
 			return id;
 		}
 
@@ -188,29 +183,30 @@ public class YoutubeDownloaderUI extends BorderPane {
 			this.hidden = hidden;
 		}
 	}
-	
-	public static synchronized void addListItem(String name, int id, boolean hide){
+
+	public static synchronized void addListItem(String name, int id, boolean hide) {
 		itemList.add(new ListItem(name, id, hide));
 	}
-	
-	//Recalculates visible list items
-	public static void refreshList(){
-		Platform.runLater(new Runnable(){
+
+	// Recalculates visible list items
+	public static void refreshList() {
+		Platform.runLater(new Runnable() {
 			@Override
 			public void run() {
 				visibleList.clear();
-				for(ListItem item : itemList){
-					if(!item.isHidden()){
+				for (ListItem item : itemList) {
+					if (!item.isHidden()) {
 						visibleList.add(item);
 					}
 				}
 			}
 		});
-		
+
 	}
-	
-	public static synchronized void setBarProgress(ProgressBar bar, double progress){
-		Platform.runLater(new Runnable(){
+
+	// Fixes java.lang.IllegalStateException
+	public static synchronized void setBarProgress(ProgressBar bar, double progress) {
+		Platform.runLater(new Runnable() {
 			@Override
 			public void run() {
 				bar.setProgress(progress);
@@ -225,9 +221,11 @@ public class YoutubeDownloaderUI extends BorderPane {
 		downloadOptionsWindow.setWidth(410);
 		downloadOptionsWindow.setResizable(false);
 
-		if(playlistId == null)	downloadOptionsWindow.setHeight(114);
-		else 					downloadOptionsWindow.setHeight(136);
-		
+		if (playlistId == null)
+			downloadOptionsWindow.setHeight(114);
+		else
+			downloadOptionsWindow.setHeight(136);
+
 		Scene scene = new Scene(new DownloadOptionsPane(videoId, playlistId));
 		downloadOptionsWindow.setScene(scene);
 		downloadOptionsWindow.showAndWait();
@@ -241,6 +239,7 @@ public class YoutubeDownloaderUI extends BorderPane {
 
 	static RadioButton rb1 = null;
 	static CheckBox cb = null;
+
 	static class DownloadOptionsPane extends GridPane {
 		public DownloadOptionsPane(String videoId, String playlistId) {
 			if (videoId != null) {
@@ -255,32 +254,33 @@ public class YoutubeDownloaderUI extends BorderPane {
 					File selectedDirectory = chooser.showDialog(downloadOptionsWindow);
 					tf.setText(selectedDirectory.getAbsolutePath());
 				});
-				
+
 				Button downloadButton = new Button("Download");
 				downloadButton.setMaxWidth(Double.MAX_VALUE);
 				downloadButton.setOnAction(e -> {
 
 					File tempFile = new File(tf.getText());
-					if(tempFile.exists() && tempFile.isDirectory()){
-						if(rb1.isSelected()){
-							if(cb != null && cb.isSelected()){
-								//sync feature
+					if (tempFile.exists() && tempFile.isDirectory()) {
+						if (rb1.isSelected()) {
+							if (cb != null && cb.isSelected()) {
+								// sync feature
 								DownloadThreadManager.addToQueue(playlistId, tempFile, true);
-							}else{
-								//Add playlist to download quota
+							} else {
+								// Add playlist to download quota
 								DownloadThreadManager.addToQueue(playlistId, tempFile, false);
 							}
-						}else{
-							//Add to download quota
-							DownloadThreadManager.addToQueue(new DownloadThreadManager.YoutubeVideo("le neim", videoId), tempFile);
+						} else {
+							// Add to download quota
+							DownloadThreadManager.addToQueue(new DownloadThreadManager.YoutubeVideo("le neim", videoId),
+									tempFile);
 						}
 						closeDownloadOptions();
-					}else{
+					} else {
 						System.out.println("Directory doesn't exist");
 					}
 				});
-				
-				if(playlistId != null){
+
+				if (playlistId != null) {
 					final ToggleGroup group = new ToggleGroup();
 
 					rb1 = new RadioButton("Playlist");
@@ -289,50 +289,49 @@ public class YoutubeDownloaderUI extends BorderPane {
 
 					RadioButton rb2 = new RadioButton("One video only");
 					rb2.setToggleGroup(group);
-					
+
 					cb = new CheckBox("Synced");
-					
+
 					group.selectedToggleProperty().addListener((ov, oldToggle, newToggle) -> {
-						if(group.getSelectedToggle() == rb1){
+						if (group.getSelectedToggle() == rb1) {
 							cb.setDisable(false);
-						}else{
+						} else {
 							cb.setDisable(true);
 						}
 					});
-					
-					add(rb1,0,2);
-					add(cb,1,2);
-					add(rb2,0,3);
-						
+
+					add(rb1, 0, 2);
+					add(cb, 1, 2);
+					add(rb2, 0, 3);
+
 					WriteInfo("");
 				}
-				
+
 				add(new Label("Download to:"), 0, 0);
-				add(tf, 0, 1,2,1);
-				add(chooserButton,2,1);
-				add(downloadButton, 2,2);
-				
+				add(tf, 0, 1, 2, 1);
+				add(chooserButton, 2, 1);
+				add(downloadButton, 2, 2);
+
 				ColumnConstraints column1 = new ColumnConstraints();
-			    column1.setPercentWidth(38);
-			    ColumnConstraints column2 = new ColumnConstraints();
-			    column2.setPercentWidth(38);
-			    ColumnConstraints column3 = new ColumnConstraints();
-			    column3.setPercentWidth(24);
-			    getColumnConstraints().addAll(column1, column2, column3); 
-				
-			    setPadding(new Insets(0, 4, 4, 4));
-			    setHgap(3);
-			    setVgap(6);
-				
-				}else{
-					WriteInfo("Bad link");
-					closeDownloadOptions();
-				}
+				column1.setPercentWidth(38);
+				ColumnConstraints column2 = new ColumnConstraints();
+				column2.setPercentWidth(38);
+				ColumnConstraints column3 = new ColumnConstraints();
+				column3.setPercentWidth(24);
+				getColumnConstraints().addAll(column1, column2, column3);
+
+				setPadding(new Insets(0, 4, 4, 4));
+				setHgap(3);
+				setVgap(6);
+
+			} else {
+				WriteInfo("Bad link");
+				closeDownloadOptions();
 			}
 		}
 	}
 
-	class ProgressIndicatorBar extends StackPane {
+	static class ProgressIndicatorBar extends StackPane {
 		private double workDone;
 		private double totalWork = -1;
 
@@ -352,18 +351,26 @@ public class YoutubeDownloaderUI extends BorderPane {
 			return workDone;
 		}
 
-		//How many items completed
+		// How many items completed
 		public void setWorkDone(double workDone) {
-			if(totalWork != -1){
+			if (totalWork != -1) {
 				this.workDone = workDone;
-				YoutubeDownloaderUI.setBarProgress(bar, workDone/totalWork);
-				text.setText((int)workDone + "/" + (int)totalWork);
-			}else{
+				YoutubeDownloaderUI.setBarProgress(bar, workDone / totalWork);
+				text.setText((int) workDone + "/" + (int) totalWork);
+			} else {
 				bar.setProgress(-1);
 				text.setText("Please wait...");
 			}
 		}
-		
+
+		public void setRawProgress(double progress) {
+			bar.setProgress(progress);
+		}
+
+		public void setText(String barText){
+			text.setText(barText);
+		}
+
 		public double getTotalWork() {
 			return totalWork;
 		}
@@ -371,81 +378,81 @@ public class YoutubeDownloaderUI extends BorderPane {
 		public void setTotalWork(int totalWork) {
 			this.totalWork = totalWork;
 		}
-		
-		public void setProgress(double progress){
+
+		public void setProgress(double progress) {
 			bar.setProgress(progress);
 		}
 	}
-	
-	class DisabledSelectionModel<T> extends MultipleSelectionModel<T> {
-		DisabledSelectionModel() {
-			super.setSelectedIndex(-1);
-			super.setSelectedItem(null);
-		}
+}
 
-		@Override
-		public ObservableList<Integer> getSelectedIndices() {
-			return FXCollections.<Integer> emptyObservableList();
-		}
-
-		@Override
-		public ObservableList<T> getSelectedItems() {
-			return FXCollections.<T> emptyObservableList();
-		}
-
-		@Override
-		public void selectAll() {
-		}
-
-		@Override
-		public void selectFirst() {
-		}
-
-		@Override
-		public void selectIndices(int index, int... indicies) {
-		}
-
-		@Override
-		public void selectLast() {
-		}
-
-		@Override
-		public void clearAndSelect(int index) {
-		}
-
-		@Override
-		public void clearSelection() {
-		}
-
-		@Override
-		public void clearSelection(int index) {
-		}
-
-		@Override
-		public boolean isEmpty() {
-			return true;
-		}
-
-		@Override
-		public boolean isSelected(int index) {
-			return false;
-		}
-
-		@Override
-		public void select(int index) {
-		}
-
-		@Override
-		public void select(T item) {
-		}
-
-		@Override
-		public void selectNext() {
-		}
-
-		@Override
-		public void selectPrevious() {
-		}
-	
+class DisabledSelectionModel<T> extends MultipleSelectionModel<T> {
+	DisabledSelectionModel() {
+		super.setSelectedIndex(-1);
+		super.setSelectedItem(null);
 	}
-	
+
+	@Override
+	public ObservableList<Integer> getSelectedIndices() {
+		return FXCollections.<Integer> emptyObservableList();
+	}
+
+	@Override
+	public ObservableList<T> getSelectedItems() {
+		return FXCollections.<T> emptyObservableList();
+	}
+
+	@Override
+	public void selectAll() {
+	}
+
+	@Override
+	public void selectFirst() {
+	}
+
+	@Override
+	public void selectIndices(int index, int... indicies) {
+	}
+
+	@Override
+	public void selectLast() {
+	}
+
+	@Override
+	public void clearAndSelect(int index) {
+	}
+
+	@Override
+	public void clearSelection() {
+	}
+
+	@Override
+	public void clearSelection(int index) {
+	}
+
+	@Override
+	public boolean isEmpty() {
+		return true;
+	}
+
+	@Override
+	public boolean isSelected(int index) {
+		return false;
+	}
+
+	@Override
+	public void select(int index) {
+	}
+
+	@Override
+	public void select(T item) {
+	}
+
+	@Override
+	public void selectNext() {
+	}
+
+	@Override
+	public void selectPrevious() {
+	}
+
+}
