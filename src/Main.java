@@ -14,6 +14,8 @@ public class Main extends Application {
 	static Stage pStage;
 	static Scene scene;
 	Button button;
+	static File libDir = new File(System.getenv("APPDATA") + "\\Tomiscout\\PlayA\\lib\\");
+	static boolean is64bit = false;
 
 	public static void main(String[] args) {
 		launch(args);
@@ -35,10 +37,7 @@ public class Main extends Application {
 		}
 
 		// initializes libraries
-		LibraryLoader.initializeLibraries();
-
-		// puts itself in the workdir folder
-		//MakeLauncher();
+		initializeLibraries();
 
 		@SuppressWarnings("unused")
 		KeyListener kl = new KeyListener();
@@ -54,17 +53,27 @@ public class Main extends Application {
 		return pStage;
 	}
 
-	private static void MakeLauncher() {
-		File launcherFile = null;
+	private void initializeLibraries() {
+		if(!libDir.exists()) libDir.mkdirs();
+		
+		if (System.getProperty("os.name").contains("Windows")) {
+			is64bit = (System.getenv("ProgramFiles(x86)") != null);
+		} else {
+			is64bit = (System.getProperty("os.arch").indexOf("64") != -1);
+		}
+
 		try {
-			launcherFile = new File(Main.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath());
-			if(launcherFile.getAbsolutePath().endsWith("bin")) return; //if this program is not opened from .jar (but eclipse)
-		} catch (URISyntaxException e) {
-			// TODO Auto-generated catch block
+			// Loads correct version of this dll
+			String JintelliLib;
+			if (is64bit) {
+				JintelliLib = libDir.getAbsolutePath()+"\\JIntellitype64.dll";
+			} else {
+				JintelliLib = libDir.getAbsolutePath()+"\\JIntellitype.dll";
+			}
+			JIntellitype.setLibraryLocation(JintelliLib);
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		File newLauncher = new File(FileUtils.getWorkDirectory() + "\\"+launcherFile.getName());
-		FileUtils.copyFile(launcherFile, newLauncher);
 	}
 	
 	}
