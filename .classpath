@@ -22,11 +22,5 @@
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="T:/Programming/Libraries/Java/Xuggler 5.4/xuggle-xuggler-arch-x86_64-w64-mingw32.jar"/>
-	<classpathentry kind="lib" path="T:/Programming/Libraries/Java/Xuggler 5.4/xuggle-xuggler-noarch-5.4.jar">
-		<attributes>
-			<attribute name="org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY" value="PlayA-2/src/lib"/>
-		</attributes>
-	</classpathentry>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>
