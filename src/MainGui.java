@@ -175,22 +175,23 @@ public class MainGui extends HBox {
 		rightPane.getChildren().addAll(comboBox, playlistPane, ytbDownloaderBtn);
 
 		getChildren().addAll(centerPane, rightPane);
+		FXMediaPlayer.play(new File("T:\\Music\\Majestic\\Paradis - Hémisphère.m4a"));
 	}
 
-	private static SongObject GetSelectedSong() {
-		SongObject item = (SongObject) table.getSelectionModel().getSelectedItem();
+	private static PlaylistWriter.SongObject GetSelectedSong() {
+		PlaylistWriter.SongObject item = (PlaylistWriter.SongObject) table.getSelectionModel().getSelectedItem();
 		return item;
 	}
 
 	@SuppressWarnings("unchecked")
-	private static ObservableList<SongObject> GetSelectedSongs() {
+	private static ObservableList<PlaylistWriter.SongObject> GetSelectedSongs() {
 		return table.getSelectionModel().getSelectedItems();
 	}
 
 	private static void PlaySelectedSong() {
-		SongObject selected = GetSelectedSong();
+		PlaylistWriter.SongObject selected = GetSelectedSong();
 		if (selected != null) {
-			PlaylistController.playSongFilename(PlaylistController.getSongFilepath(selected.getName()));
+			PlaylistController.playSong(selected.getFile());
 		}
 	}
 
@@ -203,7 +204,7 @@ public class MainGui extends HBox {
 			seekBar.setValue(d);
 	}
 
-	private static void deleteSongFromPlaylist(SongObject po) {
+	private static void deleteSongFromPlaylist(PlaylistWriter.SongObject po) {
 		PlaylistWriter.removeLineFromFile(PlaylistWriter.getPlaylistFile(po.getPlaylist()),
 				po.getFile().getAbsolutePath());
 		table.getData().remove(po);
@@ -241,7 +242,7 @@ public class MainGui extends HBox {
 
 			MenuItem itemDelete = new MenuItem("Delete from playlist");
 			itemDelete.setOnAction(e -> {
-				ObservableList<SongObject> list = GetSelectedSongs();
+				ObservableList<PlaylistWriter.SongObject> list = GetSelectedSongs();
 				if (list.size() > 1) {
 					alert.setContentText("Do you want to delete " + list.size() + "songs from playlist?");
 				} else if (!list.isEmpty()) {
@@ -257,7 +258,7 @@ public class MainGui extends HBox {
 
 			MenuItem itemDeleteFile = new MenuItem("Delete File");
 			itemDeleteFile.setOnAction(e -> {
-				ObservableList<SongObject> list = GetSelectedSongs();
+				ObservableList<PlaylistWriter.SongObject> list = GetSelectedSongs();
 				if (list.size() > 1) {
 					alert.setContentText("Do you want to delete " + list.size() + "songs?");
 				} else if (!list.isEmpty()) {
@@ -266,7 +267,7 @@ public class MainGui extends HBox {
 				Optional<ButtonType> result = alert.showAndWait();
 
 				if (result.get() == ButtonType.OK) {
-					for (SongObject so : list) {
+					for (PlaylistWriter.SongObject so : list) {
 						try {
 							File songFile = so.getFile();
 							if (FXMediaPlayer.getCurrentSong().equals(so.getFile()))

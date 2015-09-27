@@ -7,7 +7,7 @@ import javafx.scene.control.cell.PropertyValueFactory;
 
 public class SongTable extends TableView {
 	
-	private static ObservableList<SongObject> data = FXCollections.observableArrayList();
+	private static ObservableList<PlaylistWriter.SongObject> data = FXCollections.observableArrayList();
 	
 	public SongTable() {
 		setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
@@ -17,32 +17,32 @@ public class SongTable extends TableView {
 		setItems(data);
 
 		// TableColumns
-		TableColumn<SongObject, String> nameColumn = new TableColumn("Name");
+		TableColumn<PlaylistWriter.SongObject, String> nameColumn = new TableColumn("Name");
 		nameColumn.setPrefWidth(380);
 		nameColumn.setMinWidth(160);
 		nameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
 
-		TableColumn<SongObject, String> lengthColumn = new TableColumn("Length");
+		TableColumn<PlaylistWriter.SongObject, String> lengthColumn = new TableColumn("Length");
 		lengthColumn.setMaxWidth(69);
 		lengthColumn.setMinWidth(48);
-		lengthColumn.setCellValueFactory(new PropertyValueFactory<>("length"));
+		lengthColumn.setCellValueFactory(new PropertyValueFactory<>("lengthString"));
 
 		getColumns().addAll(nameColumn, lengthColumn);
 
 		// Double click listener
 		setRowFactory(tv -> {
-			TableRow<SongObject> row = new TableRow<>();
+			TableRow<PlaylistWriter.SongObject> row = new TableRow<>();
 			row.setOnMouseClicked(event -> {
 				if (event.getClickCount() == 2 && (!row.isEmpty())) {
-					SongObject rowData = row.getItem();
-					PlaylistController.playSongFilename(PlaylistController.getSongFilepath(rowData.getName()));
+					PlaylistWriter.SongObject rowData = row.getItem();
+					PlaylistController.playSong(rowData.getFile());
 				}
 			});
 			return row;
 		});
 	}
 	
-	public static ObservableList<SongObject> getData(){
+	public static ObservableList<PlaylistWriter.SongObject> getData(){
 		return data;
 	}
 }

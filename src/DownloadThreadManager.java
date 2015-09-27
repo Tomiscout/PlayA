@@ -127,7 +127,10 @@ public class DownloadThreadManager {
 					saveUrlWithProgress(dlFile, dlLink, task.getId());
 					System.out.println("Downloaded "+dlFile.getName());
 
-					convertToMp3(dlFile);//Calls seperate process
+					//If downloaded .mp4 file, convert
+					if(dlFile.getAbsolutePath().toLowerCase().endsWith(".mp4")){
+						
+					}
 				}
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -169,14 +172,14 @@ public class DownloadThreadManager {
 
 
 				double progress = (double) (totalBytesRead) / (double) (totalSize);
-				setBarProgress(bar, progress);
+				bar.setProgress(progress);
 				
 				// if second elapsed
 				long elapsedTime = System.nanoTime() - start;
 				if ((elapsedTime / 1000000000.0) > 1) {
 					start = System.nanoTime();
-					String progressInfo = String.format("%d% %d Kb\\s", progress*100, kilobytes);
-					setBarText(bar, progressInfo);
+					String progressInfo = String.format("%d %d Kb\\s", (int)(progress*100), kilobytes);
+					bar.setText(progressInfo);
 					kilobytes = 0;
 				}
 
@@ -189,43 +192,6 @@ public class DownloadThreadManager {
 				fout.close();
 			}
 		}
-	}
-	
-	private synchronized static void setBarText(YoutubeDownloaderUI.ProgressIndicatorBar bar, String text){
-		bar.setText(text);
-	}
-	private synchronized static void setBarProgress(YoutubeDownloaderUI.ProgressIndicatorBar bar, double progress){
-		bar.setRawProgress(progress);
-	}
-
-	private synchronized boolean convertToMp3(File input) {
-		if (ffmpeg.exists() && input.exists())
-		{
-			//Delete existing music file
-			File mp3File = new File(FileUtils.truncateFileType(input.getAbsolutePath())+".mp3");
-			if(!mp3File.delete()){
-				System.out.println("COULDN'T DELETE EXISTING MP3, canceled conversion.");
-				return false;
-			}
-			String command = null;
-			try{
-				// Calls ffmpeg.exe to encode media to 128k mp3
-				command = "\""+ffmpeg.getAbsolutePath() + "\" -i " + "\""+input.getAbsolutePath() + "\" -b 128k -f mp3 \""
-						+mp3File.getAbsolutePath()+"\"";
-				
-				//Executes command
-				Process p = Runtime.getRuntime().exec(command);
-				p.waitFor(); //Waits for process to exit
-				
-				input.delete();//deletes original file
-			}catch(IOException ioe){
-				System.out.println("Failed to execute command "+command);
-				ioe.printStackTrace();
-			}catch(InterruptedException ie){
-				ie.printStackTrace();
-			}
-		}
-		return true;
 	}
 
 	private synchronized void addCurrentThread(int i) {

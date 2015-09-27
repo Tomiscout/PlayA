@@ -28,9 +28,9 @@ public class PlaylistWriter {
 	public static final String TYPEHEADER = "type:";
 	public static final String URLHEADER = "url:";
 	public static final String SONGCOUNTHEADER = "count:";
+	public static final String SONGLINESEPARATOR = "Ÿ";
 	private static File rootFolder;
 
-	// FIXME bug when creating folder playlists
 	public static boolean createPlaylist(String inputName, File[] files) {
 		System.out.println("Creating playlist with input:" + files.length);
 		if (inputName == null || inputName.equals("") || files == null)
@@ -90,7 +90,7 @@ public class PlaylistWriter {
 						}
 					}
 
-					File[] rootSongs = FileUtils.filterFilesByExtention(rootFiles, ".mp3");
+					File[] rootSongs = FileUtils.filterFilesByExtention(rootFiles, FileUtils.supportedAudioFormats);
 					int rootFilesIndicator = 0;
 					if (rootSongs.length > 0)
 						rootFilesIndicator = 1;
@@ -100,7 +100,6 @@ public class PlaylistWriter {
 
 					// Enables progressbar
 					PlaylistPane.enableProgressBar(folders.size() + rootFilesIndicator);
-					progress = 0;
 
 					// Root folder songs
 					if (rootSongs.length > 0) {
@@ -111,18 +110,19 @@ public class PlaylistWriter {
 							long length = FileUtils.getSongLength(rootSongs[o]);
 							songLengths += length;
 							songCount++;
-							printWriter.println(rootSongs[o].getName() + " " + length);
+							printWriter.println(rootSongs[o].getName() + SONGLINESEPARATOR + length);
 							PlaylistPane.setProgressBarItemValue(o);
 						}
-						progress++;
-						PlaylistPane.setProgressBarValue(progress);
 					}
-
+					
 					// Songs in folders
+					PlaylistPane.enableProgressBar(folders.size());
+					progress = 0;
+					System.out.println("Folders Length:"+folders.size());
 					for (File path : folders) {
 						File[] songs;
 
-						songs = FileUtils.getExcludedFiles(path, ".mp3");
+						songs = FileUtils.getExcludedFiles(path, FileUtils.supportedAudioFormats);
 						if (songs.length != 0) {
 							PlaylistPane.setProgressBarItemMax(songs.length);
 						}
@@ -132,16 +132,13 @@ public class PlaylistWriter {
 							long length = FileUtils.getSongLength(songs[o]);
 							songLengths += length;
 							songCount++;
-							// System.out.println("writer: " +
-							// songs[o].getAbsolutePath());
-							printWriter.println(songs[o].getName() + " " + length);
+							printWriter.println(songs[o].getName() + SONGLINESEPARATOR + length);
 							PlaylistPane.setProgressBarItemValue(o);
 						}
-						progress++;
-						PlaylistPane.setProgressBarValue(progress);
 					}
 					PlaylistPane.disableProgressBar();
 					printWriter.close();
+					System.gc();
 
 					String fileName = playlistFile.getName();
 					fileName = fileName.substring(0, fileName.lastIndexOf(".plp"));
@@ -155,6 +152,7 @@ public class PlaylistWriter {
 					PlaylistPane.disableProgressBar();
 					if (printWriter != null)
 						printWriter.close();
+					System.gc();
 				}
 				createNextPlaylist();
 			}
@@ -340,32 +338,29 @@ public class PlaylistWriter {
 		}
 	}
 
-	// First line is playlist info header
+	// gets songs with absolute paths, lengths and info from .plp
 	public static String[] readPlaylist(String name) {
 		File tFile = getPlaylistFile(name);
 		String song;
 		ArrayList<String> songs = new ArrayList<String>();
 		if (tFile.exists()) {
-
 			try {
 				// Reads in UTF-8
 				BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(tFile), "UTF-8"));
 
 				String currentDir = "";
 
+				String dirHeader = SEPARATOR + DIRECTORYHEADER;
 				while ((song = br.readLine()) != null) {
-					if (song.startsWith(SEPARATOR + DIRECTORYHEADER)) {
-						currentDir = song.substring(5);
+					if (song.startsWith(dirHeader)) {
+						currentDir = song.substring(dirHeader.length());
 						continue;
 					}
 					if (!currentDir.isEmpty()) {
 						songs.add(currentDir + "\\" + song);
 					}
-
 				}
-
 				br.close();
-
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -508,6 +503,94 @@ public class PlaylistWriter {
 					System.out.println("File array is empty in rescanPlaylist()");
 				}
 			}
+		}
+	}
+	
+
+	public static SongObject parseSongObject(String info){
+		String[] items = info.split(SONGLINESEPARATOR);
+		
+		File songFile = null;
+		int length = -1;
+				
+		String ext = FileUtils.getFileExtension(items[0]);
+		
+		//Checks if correct file extention is being used
+		boolean isGood = false;
+		for(String format : FileUtils.supportedAudioFormats){
+			if(ext.equals(format)){
+				isGood = true;
+				break;
+			}
+		}
+		
+		songFile = new File(items[0]);
+		if(songFile.exists() && isGood){
+			try{
+				length = Integer.parseInt(items[1]);
+			}catch(NumberFormatException e){
+				System.out.println("Couldn't read song length");
+			}
+			
+			//TODO add more song info here
+			
+			return new SongObject(songFile, length);
+		}else{
+			System.out.println("File doesn't exist or unallowed format");
+		}
+		return null;
+	}
+	
+	public static class SongObject {
+
+		private String name = "";
+		private int length = -1;
+		private String lengthString = "";
+		private File file;
+		private String videoId = "";
+		private String playlist = "";
+		
+		public SongObject(File file, int length){
+			this.file = file;
+			if(file == null || !file.exists()) return;
+			this.length = length;
+			lengthString = FileUtils.formatSeconds(length);
+			//this.playlist = playlist;
+			this.name = FileUtils.truncateFileType(file.getName());
+		}
+				
+		public String getName() {
+			return name;
+		}
+		public void setName(String name) {
+			this.name = name;
+		}
+		public int getLength() {
+			return length;
+		}
+		public void setLength(int length) {
+			this.length = length;
+		}
+		
+		public String getLengthString() {
+			return lengthString;
+		}
+
+		public void setLengthString(String lengthString) {
+			this.lengthString = lengthString;
+		}
+
+		public File getFile(){
+			return file;
+		}
+		public void setFile(File file){
+			this.file = file;
+		}
+		public String getPlaylist() {
+			return playlist;
+		}
+		public void setPlaylist(String playlist) {
+			this.playlist = playlist;
 		}
 	}
 }

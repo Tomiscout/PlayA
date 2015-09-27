@@ -16,35 +16,29 @@ public class PlaylistController {
 	static String playingMode = "Shuffle";
 	static File workingDir = PlaylistWriter.getWorkingDir();
 
-	public static void openPlaylist(String name) {
-
+	public static void openPlaylist(String name, boolean clearList) {
 		String[] songs = PlaylistWriter.readPlaylist(name);
-		currentSongs.clear();
-		SongTable.getData().clear();
+		
+		if(clearList){
+			currentSongs.clear();
+			SongTable.getData().clear();
+		}
 
 		for (String song : songs) {
-			File songFile = new File(song);
-			int length = Integer.parseInt((song.substring(song.lastIndexOf(".mp3") + 5)));
-
-			SongTable.getData().add(new SongObject(songFile, FileUtils.formatSeconds(length), name));
-			currentSongs.add(new File(song.substring(0, song.lastIndexOf(".mp3") + 4)));
+			PlaylistWriter.SongObject songObj = PlaylistWriter.parseSongObject(song);
+			SongTable.getData().add(songObj);
+			currentSongs.add(songObj.getFile());
 		}
 
 	}
 
-	// loads few playlists
-	public static void openPlaylist(String[] names) {
-		currentSongs.clear();
-		SongTable.getData().clear();
-
+	public static void openPlaylist(String[] names, boolean clearList) {
+		if(clearList){
+			currentSongs.clear();
+			SongTable.getData().clear();
+		}
 		for (String name : names) {
-			String[] songs = PlaylistWriter.readPlaylist(name);
-			for (String song : songs) {
-				File songFile = new File(song);
-				int length = Integer.parseInt((song.substring(song.lastIndexOf(".mp3") + 5)));
-				SongTable.getData().add(new SongObject(songFile, FileUtils.formatSeconds(length), name));
-				currentSongs.add(new File(song.substring(0, song.lastIndexOf(".mp3") + 4)));
-			}
+			openPlaylist(name, false);
 		}
 	}
 
@@ -125,28 +119,7 @@ public class PlaylistController {
 		if (currentSong != null)
 			previousSongs.add(currentSong);
 		currentSong = file;
-		String name = currentSong.getAbsolutePath();
-		name = name.substring(name.lastIndexOf("\\") + 1, name.lastIndexOf(".mp3"));
-		MainGui.setSongName(name);
-	}
-	
-	public static void playSongFilename(String path){
-		File file = new File(path+".mp3");
-		if(file.exists()){
-			playSong(file);
-		}else{
-			System.out.println("File doesn't exist "+path);
-		}
-	}
-
-	public static String getSongFilepath(String name) {
-		for (File f : currentSongs) {
-			String truncated = f.getAbsolutePath();
-			truncated = truncated.substring(0, truncated.lastIndexOf(".mp3"));
-			if (truncated.endsWith(name))
-				return truncated;
-		}
-		return null;
+		MainGui.setSongName(FileUtils.truncateFileType(file.getName()));
 	}
 
 	public static void setPlayingMode(String s) {
@@ -230,7 +203,7 @@ public class PlaylistController {
 		for (int i = 0; i < list.size(); i++) {
 			playlistArray[i] = list.get(i).getName();
 		}
-		PlaylistController.openPlaylist(playlistArray);
+		PlaylistController.openPlaylist(playlistArray, true);
 	}
 
 	public static void RescanSelectedPlaylists() {

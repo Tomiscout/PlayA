@@ -11,22 +11,18 @@ import java.util.ArrayList;
 import javax.swing.ImageIcon;
 import javax.swing.filechooser.FileSystemView;
 
-import org.jaudiotagger.audio.AudioFile;
-import org.jaudiotagger.audio.AudioFileIO;
-import org.jaudiotagger.audio.AudioHeader;
-import org.jaudiotagger.audio.exceptions.CannotReadException;
-import org.jaudiotagger.audio.exceptions.InvalidAudioFrameException;
-import org.jaudiotagger.audio.exceptions.ReadOnlyFileException;
-import org.jaudiotagger.tag.TagException;
-
 import javafx.scene.image.Image;
+import javafx.scene.media.Media;
+import javafx.scene.media.MediaPlayer;
+import javafx.scene.media.MediaPlayer.Status;
 
 public class FileUtils {
 
 	public final static Object obj = new Object();
-	static String[] forbiddenSymbols = { "/", "\\", "?", "%", "*", ":", "|", "\"", "<", ">", "." };
+	static String[] forbiddenSymbols = { "/", "\\", "?", "*", ":", "|", "\"", "<", ">" };
 	static String[] forbiddenNames = { "CON", "PRN", "AUX", "CLOCK$", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5",
 			"COM6", "COM7", "COM8", "COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9", };
+	static String[] supportedAudioFormats = { ".mp3", ".m4a", ".waw", ".ogg" };
 	static ImageIcon[] rootIcons = new ImageIcon[2];
 	static final String ASSETSFOLDER = "assets/";
 	static FileSystemView fsv = FileSystemView.getFileSystemView();
@@ -35,11 +31,13 @@ public class FileUtils {
 	public static String getWorkDirectory() {
 		return workingDir;
 	}
-	public static String truncateFileType(String p){
+
+	public static String truncateFileType(String p) {
 		int indexOfPeriod = p.lastIndexOf(".");
-		
-		if(indexOfPeriod < 0) return p;
-		else{
+
+		if (indexOfPeriod < 0)
+			return p;
+		else {
 			return p.substring(0, indexOfPeriod);
 		}
 	}
@@ -86,13 +84,20 @@ public class FileUtils {
 
 	// Excludes files in a directory by file extention
 	public static File[] getExcludedFiles(File dir, String ext) {
+		return getExcludedFiles(dir, new String[] { ext });
+	}
+
+	public static File[] getExcludedFiles(File dir, String[] ext) {
 		ArrayList<File> files = new ArrayList<File>();
 		if (dir.isDirectory()) {
 			File[] rawFiles = dir.listFiles();
 			for (File f : rawFiles) {
 				String extension = getFileExtension(f.getAbsolutePath());
-				if (extension != null && extension.equals(ext)) {
-					files.add(f);
+				if (extension != null) {
+					for (String e : ext) {
+						if (extension.equals(e))
+							files.add(f);
+					}
 				}
 			}
 			File[] returnFiles = files.toArray(new File[files.size()]);
@@ -101,11 +106,14 @@ public class FileUtils {
 			return null;
 		}
 	}
-	
-	public static File[] filterFilesByExtention(ArrayList<File> files, String ext){
+
+	public static File[] filterFilesByExtention(ArrayList<File> files, String[] ext) {
 		ArrayList<File> filtered = new ArrayList<File>();
-		for(File f : files){
-			if(f.getAbsolutePath().endsWith(ext)) filtered.add(f);
+		for (File f : files) {
+			for (String e : ext) {
+				if (f.getAbsolutePath().endsWith(e))
+					filtered.add(f);
+			}
 		}
 		return filtered.toArray(new File[filtered.size()]);
 	}
@@ -135,27 +143,23 @@ public class FileUtils {
 
 	public static long getSongLength(File file) {
 		long length = -1;
-
 		try {
-			AudioFile f = AudioFileIO.read(file);
-			AudioHeader a = f.getAudioHeader();
-			length = a.getTrackLength();
-		} catch (IOException e) {
-			e.printStackTrace();
-		} catch (InvalidAudioFrameException e) {
-			e.printStackTrace();
-		}
-		catch (CannotReadException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (TagException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (ReadOnlyFileException e) {
-			// TODO Auto-generated catch block
+			Media media = new Media(file.toURI().toString());
+			MediaPlayer mediaPlayer = new MediaPlayer(media);
+
+			// Sleeps thread because Media is asynchronous, count to avoid infinite loop
+			// takes ~2 loops to get ready status
+			int count = 0;
+			while (mediaPlayer.getStatus() != Status.READY && count<20) {
+				Thread.sleep(10);
+				count++;
+			}
+			
+			length = (long) media.getDuration().toSeconds();
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
-	
+
 		return length;
 	}
 
@@ -207,7 +211,7 @@ public class FileUtils {
 		ArrayList<File> subFolders = new ArrayList<File>();
 
 		for (File p : dir) {
-			if(p.isDirectory()){
+			if (p.isDirectory()) {
 				File[] childs = getSubFolders(p);
 				for (File c : childs) {
 					subFolders.add(c);
@@ -230,19 +234,19 @@ public class FileUtils {
 		}
 		return line;
 	}
-	
-	public static void copyFile( File from, File to ){
-	    try {
-			Files.copy( from.toPath(), to.toPath() );
+
+	public static void copyFile(File from, File to) {
+		try {
+			Files.copy(from.toPath(), to.toPath());
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
-	
-	public static Image getAssetsImage(String name){
-		System.out.println("Loading assets image: "+ASSETSFOLDER+name);
-		InputStream stream = FileUtils.class.getResourceAsStream(ASSETSFOLDER+name);
-		if(stream == null) {
+
+	public static Image getAssetsImage(String name) {
+		System.out.println("Loading assets image: " + ASSETSFOLDER + name);
+		InputStream stream = FileUtils.class.getResourceAsStream(ASSETSFOLDER + name);
+		if (stream == null) {
 			System.out.println("asset image stream is null!");
 			return null;
 		}

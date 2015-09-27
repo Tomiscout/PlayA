@@ -39,7 +39,7 @@ public class PlaylistTable extends TableView{
 			row.setOnMouseClicked(event -> {
 				if (event.getClickCount() == 2 && (!row.isEmpty())) {
 					PlaylistObject rowData = row.getItem();
-					PlaylistController.openPlaylist(rowData.getName());
+					PlaylistController.openPlaylist(rowData.getName(), true);
 				}
 			});
 			return row;

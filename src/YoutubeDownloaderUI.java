@@ -204,16 +204,6 @@ public class YoutubeDownloaderUI extends BorderPane {
 
 	}
 
-	// Fixes java.lang.IllegalStateException
-	public static synchronized void setBarProgress(ProgressBar bar, double progress) {
-		Platform.runLater(new Runnable() {
-			@Override
-			public void run() {
-				bar.setProgress(progress);
-			}
-		});
-	}
-
 	public static void displayDownloadOptions(String videoId, String playlistId) {
 		downloadOptionsWindow = new Stage();
 		downloadOptionsWindow.initModality(Modality.APPLICATION_MODAL);
@@ -355,20 +345,21 @@ public class YoutubeDownloaderUI extends BorderPane {
 		public void setWorkDone(double workDone) {
 			if (totalWork != -1) {
 				this.workDone = workDone;
-				YoutubeDownloaderUI.setBarProgress(bar, workDone / totalWork);
-				text.setText((int) workDone + "/" + (int) totalWork);
+				setProgress(workDone / totalWork);
+				setText((int) workDone + "/" + (int) totalWork);
 			} else {
-				bar.setProgress(-1);
-				text.setText("Please wait...");
+				setProgress(-1);
+				setText("Please wait...");
 			}
 		}
 
-		public void setRawProgress(double progress) {
-			bar.setProgress(progress);
-		}
-
 		public void setText(String barText){
-			text.setText(barText);
+			Platform.runLater(new Runnable() {
+				@Override
+				public void run() {
+					text.setText(barText);
+				}
+			});
 		}
 
 		public double getTotalWork() {
@@ -380,7 +371,12 @@ public class YoutubeDownloaderUI extends BorderPane {
 		}
 
 		public void setProgress(double progress) {
-			bar.setProgress(progress);
+			Platform.runLater(new Runnable() {
+				@Override
+				public void run() {
+					bar.setProgress(progress);
+				}
+			});
 		}
 	}
 }

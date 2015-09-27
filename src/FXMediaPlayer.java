@@ -1,9 +1,12 @@
 import java.io.File;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
+import javafx.scene.media.MediaPlayer.Status;
 import javafx.util.Duration;
 
 public class FXMediaPlayer {
@@ -14,7 +17,7 @@ public class FXMediaPlayer {
 	static File currentSong;
 
 	public static void play(File song) {
-		if (isPaused) {
+		if (isPaused && song.equals(currentSong)) {
 			isPaused = false;
 			player.play();
 		} else {
@@ -24,8 +27,19 @@ public class FXMediaPlayer {
 				return;
 			}
 			currentSong = song;
-			
-			Media media = new Media(song.toURI().toString());
+
+			String filePath = null;
+			try {
+				//Encoding filename to UTF-8, doesn't support folders with UTF-8 characters
+				filePath = song.getParentFile().toURI().toString()
+						+ URLEncoder.encode(song.getName(), "UTF-8").replace("+", "%20");
+			} catch (UnsupportedEncodingException e) {
+				e.printStackTrace();
+			}
+
+			Media media = new Media(filePath);
+
+			if(player != null && player.getStatus() == Status.PAUSED) player.dispose();
 			player = new MediaPlayer(media);
 			player.currentTimeProperty().addListener(new ChangeListener<Duration>() {
 				public void changed(ObservableValue<? extends Duration> observable, Duration duration,
@@ -39,8 +53,8 @@ public class FXMediaPlayer {
 			});
 			player.setOnEndOfMedia(() -> {
 				PlaylistController.playNextSong();
-				});
-			
+			});
+
 			player.setVolume(Volume);
 			player.play();
 		}
@@ -67,7 +81,7 @@ public class FXMediaPlayer {
 	public static void dispose() {
 		if (player != null)
 			player.dispose();
-			player = null;
+		player = null;
 	}
 
 	public static boolean isNull() {
@@ -80,7 +94,8 @@ public class FXMediaPlayer {
 			player.setVolume(d);
 		}
 	}
-	public static File getCurrentSong(){
+
+	public static File getCurrentSong() {
 		return currentSong;
 	}
 }
