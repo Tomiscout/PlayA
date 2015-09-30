@@ -1,2 +1,2 @@
-# PlayA-2
+# PlayA
 Music Player using JavaFX
