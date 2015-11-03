@@ -78,9 +78,6 @@ public class YoutubeDownloaderUI extends BorderPane {
 								bar.setMinWidth(64);
 								bar.setMinHeight(cellContent.getHeight());
 
-								// bar.setTotalWork(item.getBar().getTotalWork());
-								// bar.setWorkDone(item.getDownloadedSongCount());
-
 								nameLabel.setMaxWidth(itemView.getWidth() - bar.getWidth());
 
 								cellContent.add(nameLabel, 0, 0);
@@ -158,9 +155,6 @@ public class YoutubeDownloaderUI extends BorderPane {
 		public void plusDownloaded() {
 			downloadedSongCount++;
 			bar.setWorkDone(downloadedSongCount);
-			if (downloadedSongCount >= songCount) {
-				// TODO completed download
-			}
 		}
 
 		public String getName() {
@@ -181,6 +175,11 @@ public class YoutubeDownloaderUI extends BorderPane {
 
 		public void setHide(boolean hidden) {
 			this.hidden = hidden;
+		}
+		
+		public void setCompleted(){
+			bar.setText("100%");
+			bar.setProgress(1);
 		}
 	}
 

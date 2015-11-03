@@ -7,9 +7,6 @@ import javafx.scene.Scene;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.ProgressBar;
-import javafx.scene.control.Tab;
-import javafx.scene.control.TabPane;
-import javafx.scene.control.TabPane.TabClosingPolicy;
 import javafx.scene.input.DataFormat;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.MouseButton;
@@ -22,11 +19,9 @@ import javafx.stage.Stage;
 public class PlaylistPane extends VBox {
 
 	static PlaylistTable folderTable;
-	static PlaylistTable youtubeTable;
 
 	static Stage PlaylistCreationStage;
 
-	static TabPane tablePane;
 	static File workingDir = PlaylistWriter.getWorkingDir();
 	static ProgressBar bar;
 	static double currentProgress;
@@ -35,53 +30,34 @@ public class PlaylistPane extends VBox {
 	static double maxItemProgress;
 
 	static boolean isFinished;
-	
+
 	@SuppressWarnings("unchecked")
 	public PlaylistPane() {
-		tablePane = new TabPane();
-		tablePane.setTabClosingPolicy(TabClosingPolicy.UNAVAILABLE);
-
-		Tab foldersTab = new Tab("Folders");
-		Tab youtubeTab = new Tab("Youtube");
-		
 		PlaylistContextMenuLocal localContext = new PlaylistContextMenuLocal();
 
 		folderTable = new PlaylistTable();
-		youtubeTable = new PlaylistTable();
 
 		BorderPane folderTablePane = new BorderPane();
-		VBox youtubeTablePane = new VBox();
 
 		folderTablePane.setCenter(folderTable);
 
-		foldersTab.setContent(folderTablePane);		
-		youtubeTab.setContent(youtubeTablePane);
-
-		tablePane.getTabs().addAll(foldersTab, youtubeTab);
-
 		folderTable.setOnMousePressed(e -> {
-			if(e.getButton() == MouseButton.SECONDARY && !getCurrentSelectedItems().isEmpty()){
+			if (e.getButton() == MouseButton.SECONDARY && !getCurrentSelectedItems().isEmpty()) {
 				localContext.show(folderTable, e.getScreenX(), e.getScreenY());
-			}else{
+			} else {
 				localContext.hide();
 			}
 		});
-		
-		
-		
-		youtubeTablePane.getChildren().addAll(youtubeTable);
-		
+
 		// ProgressBar
 		bar = new ProgressBar(0);
 		bar.setMaxWidth(Double.MAX_VALUE);
 		folderTablePane.setBottom(bar);
 		disableProgressBar();
 
-		BorderPane topPane = new BorderPane();
-
 		setSpacing(5);
 		setPadding(new Insets(10, 0, 0, 10));
-		getChildren().addAll(topPane, tablePane);
+		getChildren().addAll(folderTable);
 		setMinWidth(260);
 
 		setOnDragOver(event -> {
@@ -106,50 +82,27 @@ public class PlaylistPane extends VBox {
 
 	// Loads playlists, hardcoded
 	public static void reloadPlaylists() {
-		PlaylistTable[] pt = { folderTable, youtubeTable };
-		for (PlaylistTable t : pt) {
-			ObservableList<PlaylistObject> data = t.data;
-			if (data != null)
-				data.clear();
-		}
+		ObservableList<PlaylistObject> data = folderTable.data;
+		if (data != null)
+			data.clear();
 
 		File[] playlists = FileUtils.getExcludedFiles(PlaylistWriter.getWorkingDir(), ".plp");
 		for (File f : playlists) {
 			PlaylistHeader header = new PlaylistHeader(f);
 			if (header.getType() == 0) {
 				folderTable.data.add(header.getPlaylistObject());
-			} else if (header.getType() == 1) {
-				youtubeTable.data.add(header.getPlaylistObject());
-			} else if (header.getType() == 2) {
-
-			}
-
-		}
-
-	}
-
-	public static PlaylistTable getCurrentTable() {
-		ObservableList<Tab> tabs = tablePane.getTabs();
-		for (Tab t : tabs) {
-			if (t.isSelected()) {
-				String name = t.getText();
-				if (name.equals("Folders")) {
-					return folderTable;
-				} else if (name.equals("Custom")) {
-					return youtubeTable;
-				}
 			}
 		}
-		return null;
+
 	}
 
 	@SuppressWarnings("unchecked")
 	public static ObservableList<PlaylistObject> getCurrentSelectedItems() {
-		return getCurrentTable().getSelectionModel().getSelectedItems();
+		return folderTable.getSelectionModel().getSelectedItems();
 	}
 
 	public static PlaylistObject getCurrentSelectedItem() {
-		return (PlaylistObject) getCurrentTable().getSelectionModel().getSelectedItem();
+		return (PlaylistObject) folderTable.getSelectionModel().getSelectedItem();
 	}
 
 	// Handles dragged files on PlaylistPane
@@ -164,7 +117,7 @@ public class PlaylistPane extends VBox {
 
 		if (folders <= 1) {
 			PlaylistCreationData data = displayPlaylistCreation(fileList.get(0).getName(), false);
-			if(data.isFinished()){
+			if (data.isFinished()) {
 				PlaylistWriter.createPlaylist(data.getName(), filesArray);
 			}
 		} else {
@@ -179,6 +132,10 @@ public class PlaylistPane extends VBox {
 			}
 		}
 
+	}
+	
+	public static void removeItem(PlaylistObject po){
+		folderTable.data.remove(po);
 	}
 
 	private class PlaylistCreationData {
@@ -254,24 +211,24 @@ public class PlaylistPane extends VBox {
 		bar.setManaged(false);
 	}
 
-	//ContextMenu class
-	public class PlaylistContextMenuLocal extends ContextMenu{
-		public PlaylistContextMenuLocal(){
-			
+	// ContextMenu class
+	public class PlaylistContextMenuLocal extends ContextMenu {
+		public PlaylistContextMenuLocal() {
+
 			MenuItem itemOpen = new MenuItem("Open");
 			itemOpen.setOnAction(e -> PlaylistController.OpenSelectedPlaylists());
-			
+
 			MenuItem itemDelete = new MenuItem("Delete");
 			itemDelete.setOnAction(e -> PlaylistController.DeleteSelectedPlaylists());
-			
+
 			MenuItem itemRename = new MenuItem("Rename");
 			itemRename.setOnAction(e -> PlaylistController.RenamePlaylist());
-			
+
 			MenuItem itemRescan = new MenuItem("Rescan");
 			itemRescan.setOnAction(e -> PlaylistController.RescanSelectedPlaylists());
-			
+
 			getItems().addAll(itemOpen, itemDelete, itemRename, itemRescan);
 		}
 	}
-	
+
 }

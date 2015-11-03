@@ -1,0 +1,8 @@
+0.7
+*Adjusted layout.
+*New css theme.
+*New button icons.
+*Changing buttons.
+*Sliders using JFoenix library
+*Added support for album art (not implemented)
+*Added compact shrinking option (buggy)

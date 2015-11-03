@@ -13,7 +13,8 @@ public class PlaylistController {
 	static ArrayList<File> currentSongs = new ArrayList<File>();
 	static ArrayList<File> previousSongs = new ArrayList<File>();
 	static File currentSong;
-	static String playingMode = "Shuffle";
+	static private boolean isShuffle = true;
+	static private boolean isRepeat = false;
 	static File workingDir = PlaylistWriter.getWorkingDir();
 
 	public static void openPlaylist(String name, boolean clearList) {
@@ -21,12 +22,12 @@ public class PlaylistController {
 		
 		if(clearList){
 			currentSongs.clear();
-			SongTable.getData().clear();
+			MainGui.table.getData().clear();
 		}
 
 		for (String song : songs) {
 			PlaylistWriter.SongObject songObj = PlaylistWriter.parseSongObject(song);
-			SongTable.getData().add(songObj);
+			MainGui.table.getData().add(songObj);
 			currentSongs.add(songObj.getFile());
 		}
 
@@ -35,7 +36,7 @@ public class PlaylistController {
 	public static void openPlaylist(String[] names, boolean clearList) {
 		if(clearList){
 			currentSongs.clear();
-			SongTable.getData().clear();
+			MainGui.table.getData().clear();
 		}
 		for (String name : names) {
 			openPlaylist(name, false);
@@ -50,7 +51,10 @@ public class PlaylistController {
 		if (currentSong == null)
 			return;
 
-		if (playingMode.equals("Shuffle")) {
+		//Gives priority to repeating song
+		if(isRepeat){
+			playSong(currentSong, true);
+		}else if (isShuffle) {
 			Random rand = new Random();
 			int randomNum;
 			boolean isSame = false;
@@ -78,23 +82,23 @@ public class PlaylistController {
 			}
 			File song = currentSongs.get(randomNum);
 			previousSongs.add(song);
-			playSong(song);
+			playSong(song, true);
 		} else {
 			for (int i = 0; i < currentSongs.size(); i++) {
 				if (currentSongs.get(i).equals(currentSong)) {
 					if (i == currentSongs.size() - 1) {
 						previousSongs.add(currentSong);
-						playSong(currentSongs.get(0));
+						playSong(currentSongs.get(0), true);
 						return;
 					} else {
 						previousSongs.add(currentSong);
 						
-						playSong(currentSongs.get(i + 1));
+						playSong(currentSongs.get(i + 1), true);
 						return;
 					}
 				}
 			}
-			playSong(currentSongs.get(0));
+			playSong(currentSongs.get(0), true);
 		}
 	}
 
@@ -107,23 +111,24 @@ public class PlaylistController {
 
 		if (currentSong != null) {
 			previousSongs.remove(prevSong);
-			PlayerController.play(currentSong);
-			String name = currentSong.getAbsolutePath();
-			name = name.substring(name.lastIndexOf("\\") + 1, name.lastIndexOf(".mp3"));
-			MainGui.setSongName(name);
+			FXMediaPlayer.play(currentSong, true);
 		}
 	}
 
-	public static void playSong(File file) {
-		PlayerController.play(file);
+	public static void playSong(File file, boolean force) {
+		FXMediaPlayer.play(file, force);
 		if (currentSong != null)
 			previousSongs.add(currentSong);
 		currentSong = file;
-		MainGui.setSongName(FileUtils.truncateFileType(file.getName()));
 	}
 
-	public static void setPlayingMode(String s) {
-		playingMode = s;
+	public static boolean toggleShuffle() {
+		isShuffle = !isShuffle;
+		return isShuffle;
+	}
+	public static boolean toggleRepeat(){
+		isRepeat = !isRepeat;
+		return isRepeat;
 	}
 
 	public static void DeleteSelectedPlaylists() {
@@ -132,7 +137,6 @@ public class PlaylistController {
 		alert.setHeaderText("Are you sure?");
 		ObservableList<PlaylistObject> list = PlaylistPane.getCurrentSelectedItems();
 		PlaylistObject[] listArray = list.toArray(new PlaylistObject[list.size()]);
-		PlaylistTable currentTable = PlaylistPane.getCurrentTable();
 
 		if (list != null) {
 			alert.setContentText("Do you want to delete " + list.size() + " playlist(s)?");
@@ -156,7 +160,7 @@ public class PlaylistController {
 					} else {
 						System.out.println("Couldn't find playlist for deletion: " + delFile.getAbsolutePath());
 					}
-					currentTable.data.remove(po);// Deleting from the table
+					PlaylistPane.removeItem(po);// Deleting from the table
 				}
 
 			} else {
@@ -214,5 +218,4 @@ public class PlaylistController {
 			PlaylistWriter.rescanPlaylist(po);
 		}
 	}
-
 }

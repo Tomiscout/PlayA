@@ -10,6 +10,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
 
+import javafx.concurrent.Task;
+
 public class DownloadThreadManager {
 	static Vector<DownloadTask> downloadTasks = new Vector<DownloadTask>();
 	static ArrayList<DownloadTask> deletionList = new ArrayList<DownloadTask>();
@@ -96,7 +98,7 @@ public class DownloadThreadManager {
 							System.out.println("M4A: " + sourceInfo.getM4ALink());
 							dlFile = new File(
 									task.getDir().getAbsolutePath() + "\\" + task.getVideo().getVideoName() + ".m4a");
-							System.out.println("Dl file: " + dlFile.getAbsolutePath());
+							System.out.println("Dl file of "+task.getVideo().getVideoId()+": " + dlFile.getAbsolutePath());
 							dlLink = sourceInfo.getM4ALink();
 						} else {
 							badFirstSource = true;
@@ -178,12 +180,13 @@ public class DownloadThreadManager {
 				long elapsedTime = System.nanoTime() - start;
 				if ((elapsedTime / 1000000000.0) > 1) {
 					start = System.nanoTime();
-					String progressInfo = String.format("%d %d Kb\\s", (int)(progress*100), kilobytes);
+					String progressInfo = String.format("%d% %d kB\\s", (int)(progress*100), kilobytes);
 					bar.setText(progressInfo);
 					kilobytes = 0;
 				}
-
 			}
+			//Sets progress to Completed
+			YoutubeDownloaderUI.getListItem(id).setCompleted();
 		} finally {
 			if (is != null) {
 				is.close();
@@ -199,6 +202,7 @@ public class DownloadThreadManager {
 		currentThreads += i;
 	}
 	
+	//TODO adds one video
 	public static void addToQueue(YoutubeVideo video, File dir) {
 		if (dir.isDirectory()) {
 			downloadTasks.add(new DownloadTask(video, dir));

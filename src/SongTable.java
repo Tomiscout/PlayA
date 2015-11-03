@@ -7,7 +7,7 @@ import javafx.scene.control.cell.PropertyValueFactory;
 
 public class SongTable extends TableView {
 	
-	private static ObservableList<PlaylistWriter.SongObject> data = FXCollections.observableArrayList();
+	public ObservableList<PlaylistWriter.SongObject> data = FXCollections.observableArrayList();
 	
 	public SongTable() {
 		setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
@@ -35,14 +35,14 @@ public class SongTable extends TableView {
 			row.setOnMouseClicked(event -> {
 				if (event.getClickCount() == 2 && (!row.isEmpty())) {
 					PlaylistWriter.SongObject rowData = row.getItem();
-					PlaylistController.playSong(rowData.getFile());
+					PlaylistController.playSong(rowData.getFile(),true);
 				}
 			});
 			return row;
 		});
 	}
 	
-	public static ObservableList<PlaylistWriter.SongObject> getData(){
+	public ObservableList<PlaylistWriter.SongObject> getData(){
 		return data;
 	}
 }

@@ -55,7 +55,7 @@ public class PlaylistHeader {
 	}
 	
 	public PlaylistObject getPlaylistObject() {
-		return new PlaylistObject(getName(), getSongCount(), FileUtils.formatSeconds(getLength()));
+		return new PlaylistObject(getName(), getSongCount(), DataUtils.formatSeconds((long)getLength(), true));
 	}
 
 	public int getSongCount() {

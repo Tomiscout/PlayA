@@ -494,7 +494,7 @@ public class PlaylistWriter {
 				e.printStackTrace();
 			} finally {
 				tFile.delete();
-				PlaylistPane.getCurrentTable().data.remove(po);// Deleting from
+				PlaylistPane.removeItem(po);// Deleting from
 																// the table
 				File[] folderArray = folders.toArray(new File[folders.size()]);
 				if (folderArray.length > 0) {
@@ -510,9 +510,14 @@ public class PlaylistWriter {
 	public static SongObject parseSongObject(String info){
 		String[] items = info.split(SONGLINESEPARATOR);
 		
+		if(items.length<2){
+			System.out.println("parseSongObject(String) bad string input:"+info);
+			return new SongObject();
+		}
+		
 		File songFile = null;
 		int length = -1;
-				
+		
 		String ext = FileUtils.getFileExtension(items[0]);
 		
 		//Checks if correct file extention is being used
@@ -525,7 +530,12 @@ public class PlaylistWriter {
 		}
 		
 		songFile = new File(items[0]);
-		if(songFile.exists() && isGood){
+		if(!songFile.exists()){
+			System.out.println("Couldn't find song: "+info);
+			isGood = false;
+			return new SongObject();
+		}
+		if(isGood){
 			try{
 				length = Integer.parseInt(items[1]);
 			}catch(NumberFormatException e){
@@ -536,14 +546,14 @@ public class PlaylistWriter {
 			
 			return new SongObject(songFile, length);
 		}else{
-			System.out.println("File doesn't exist or unallowed format");
+			System.out.println("Unallowed audio format:"+songFile.getName());
 		}
 		return null;
 	}
 	
 	public static class SongObject {
 
-		private String name = "";
+		private String name = "null";
 		private int length = -1;
 		private String lengthString = "";
 		private File file;
@@ -554,9 +564,11 @@ public class PlaylistWriter {
 			this.file = file;
 			if(file == null || !file.exists()) return;
 			this.length = length;
-			lengthString = FileUtils.formatSeconds(length);
+			lengthString = DataUtils.formatSeconds((long)length, true);
 			//this.playlist = playlist;
 			this.name = FileUtils.truncateFileType(file.getName());
+		}
+		public SongObject(){
 		}
 				
 		public String getName() {

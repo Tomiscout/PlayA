@@ -1,15 +1,42 @@
+import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
+import java.net.URISyntaxException;
+import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.List;
 
+import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 import javax.swing.filechooser.FileSystemView;
+
+import org.jaudiotagger.audio.AudioFileIO;
+import org.jaudiotagger.audio.exceptions.CannotReadException;
+import org.jaudiotagger.audio.exceptions.InvalidAudioFrameException;
+import org.jaudiotagger.audio.exceptions.ReadOnlyFileException;
+import org.jaudiotagger.audio.mp3.MP3File;
+import org.jaudiotagger.tag.TagException;
+import org.jaudiotagger.tag.id3.AbstractID3v2Tag;
+import org.jaudiotagger.tag.images.Artwork;
+
+import com.coremedia.iso.IsoFile;
+import com.coremedia.iso.boxes.Box;
+import com.coremedia.iso.boxes.MetaBox;
+import com.coremedia.iso.boxes.MovieBox;
+import com.coremedia.iso.boxes.UserDataBox;
+import com.coremedia.iso.boxes.apple.AppleItemListBox;
+import com.googlecode.mp4parser.DirectFileReadDataSource;
+import com.googlecode.mp4parser.boxes.apple.AppleCoverBox;
 
 import javafx.scene.image.Image;
 import javafx.scene.media.Media;
@@ -144,7 +171,16 @@ public class FileUtils {
 	public static long getSongLength(File file) {
 		long length = -1;
 		try {
-			Media media = new Media(file.toURI().toString());
+			String filePath = null;
+			try {
+				//Encoding filename to UTF-8, doesn't support folders with UTF-8 characters
+				filePath = file.getParentFile().toURI().toString()
+						+ URLEncoder.encode(file.getName(), "UTF-8").replace("+", "%20");
+			} catch (UnsupportedEncodingException e) {
+				e.printStackTrace();
+			}
+
+			Media media = new Media(filePath);
 			MediaPlayer mediaPlayer = new MediaPlayer(media);
 
 			// Sleeps thread because Media is asynchronous, count to avoid infinite loop
@@ -161,37 +197,6 @@ public class FileUtils {
 		}
 
 		return length;
-	}
-
-	public static String formatSeconds(int s) {
-		String string = "";
-
-		if (s < 1)
-			return "00:00";
-
-		int remainder;
-		int days = (int) s / 86400;
-		int hours = (int) (s % 86400) / 3600;
-		remainder = s - days * 86400 - hours * 3600;
-		int mins = (int) remainder / 60;
-		int secs = remainder % 60;
-
-		if (days > 0)
-			string += days + "d";
-		if (hours > 0)
-			string += hours + "h ";
-
-		if (mins < 10)
-			string += "0" + mins + ":";
-		else
-			string += mins + ":";
-
-		if (secs < 10)
-			string += "0" + secs;
-		else
-			string += secs;
-
-		return string;
 	}
 
 	public static File[] getSubFolders(File path) {
@@ -234,6 +239,25 @@ public class FileUtils {
 		}
 		return line;
 	}
+	
+	public static String readFile(File f){
+		try(BufferedReader br = new BufferedReader(new FileReader(f))) {
+		    StringBuilder sb = new StringBuilder();
+		    String line = br.readLine();
+
+		    while (line != null) {
+		        sb.append(line);
+		        sb.append(System.lineSeparator());
+		        line = br.readLine();
+		    }
+		    return sb.toString();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
 
 	public static void copyFile(File from, File to) {
 		try {
@@ -252,5 +276,105 @@ public class FileUtils {
 		}
 		Image image = new Image(stream);
 		return image;
+	}
+	
+	public static File getThisJarFile(){
+		try {
+			return new File(FileUtils.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath());
+		} catch (URISyntaxException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+	
+	//Walks down mp4 structure to get cover art image
+	public static BufferedImage getCoverArtFromMp4File(File f){
+		IsoFile isoFile = null;
+		try {
+			isoFile = new IsoFile(new DirectFileReadDataSource(f));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		
+        MovieBox moov = (MovieBox) isoFile.getMovieBox();
+        UserDataBox uData = null;
+        if(moov != null) {
+        	List<Box> boxes = moov.getBoxes();
+        	//Finds UserDataBox
+        	for(Box b : boxes){
+        		if(b instanceof UserDataBox)uData = (UserDataBox)b;
+        	}
+        }
+		AppleCoverBox cover = null; //CoverArt box
+        if(uData != null){
+        	MetaBox metaBox = (MetaBox) uData.getBoxes().get(0);
+        	if(metaBox != null){
+        		AppleItemListBox ib = null;
+        		List<Box> appleBoxes = metaBox.getBoxes();
+        		
+        		//Finds AppleItemListBox from metadata boxes
+        		for(Box appleBox : appleBoxes){
+        			if(appleBox instanceof AppleItemListBox){
+        				ib = (AppleItemListBox) appleBox;
+        				break;
+        			}
+        		}
+        		
+        		if(ib != null){
+        			List<Box> itemListBox = ib.getBoxes();
+        			//Finds AppleCoverBox from AppleItemListBox boxes
+	            	for(Box b : itemListBox){
+	            		if(b instanceof AppleCoverBox) {
+	            			cover = (AppleCoverBox)b;
+	            			break;
+	            		}
+	            	}
+        		}else{
+        			System.out.println("No AppleItemListBox");
+        		}
+        	}
+        }
+        
+        //If file contains coverArt
+        if(cover != null){
+        	byte[] imageData = cover.getCoverData();
+        	InputStream in = new ByteArrayInputStream(imageData);
+			try {
+				BufferedImage bi = ImageIO.read(in);
+				return bi;
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+        }
+        return null;
+	}
+
+	public static BufferedImage getCoverArtFromMp3File(File f){
+		MP3File mp3;
+		java.awt.Image cover = null;
+		try {
+			mp3 = (MP3File) AudioFileIO.read(f);
+			AbstractID3v2Tag v24tag = mp3.getID3v2TagAsv24();
+
+			Artwork artWork = null;
+			if (v24tag != null)
+				artWork = v24tag.getFirstArtwork();
+
+			if (artWork != null) {
+				cover = (java.awt.Image) artWork.getImage();
+			} else {
+				System.out.println("No cover art");
+			}
+		} catch (CannotReadException | IOException | TagException | ReadOnlyFileException
+				| InvalidAudioFrameException e) {
+			e.printStackTrace();
+		}
+		
+		if(cover != null){
+			return DataUtils.toBufferedImage(cover);
+		}
+		
+		return null;
 	}
 }

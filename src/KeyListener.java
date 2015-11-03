@@ -13,7 +13,7 @@ public class KeyListener implements IntellitypeListener{
 	// listen for hotkey
 		public void onIntellitype(int aIdentifier) {
 			if(aIdentifier == JIntellitype.APPCOMMAND_MEDIA_PLAY_PAUSE){
-				PlayerController.parseMediaKey();
+				FXMediaPlayer.togglePlay();
 			}
 		}
 }

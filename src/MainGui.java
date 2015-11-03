@@ -1,44 +1,70 @@
 import java.awt.Desktop;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Optional;
 
-import javafx.collections.FXCollections;
+import com.jfoenix.controls.JFXSlider;
+import com.jfoenix.controls.JFXSlider.IndicatorPosition;
+
+import javafx.application.Platform;
 import javafx.collections.ObservableList;
+import javafx.event.EventHandler;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
-import javafx.scene.control.ComboBox;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuItem;
-import javafx.scene.control.Slider;
+import javafx.scene.control.Skin;
 import javafx.scene.control.Tooltip;
+import javafx.scene.effect.Reflection;
 import javafx.scene.image.ImageView;
+import javafx.scene.image.PixelWriter;
+import javafx.scene.image.WritableImage;
 import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
 
 public class MainGui extends HBox {
 
-	static Slider seekBar;
+	static PlaylistPane playlistPane;
+	static JFXSliderCustom seekBar;
 	static SongTable table;
 	static Label songLabel = null;
+	static ImageView albumCover;
+	static ImageView songBackground;
 	private static boolean isSeeking = false;
-	private boolean isShrinked = false;
+	private static int shrinkMode = 0;
+	private static ImageView playImage;
+	private static ImageView pauseImage;
+	private static ImageView shrinkIn;
+	private static ImageView shrinkOut;
+	private static ImageView shrinkLeft;
+	private static ImageView shuffleOn;
+	private static ImageView shuffleOff;
+	private static ImageView repeatOn;
+	private static ImageView repeatOff;
+	private static Button playBtn;
+	private static Button shrinkBtn;
+	private static Button shuffleBtn;
+	private static Button repeatBtn;
+
+	
 
 	private static Stage downloaderStage;
 
-	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public MainGui() {
-
-		getStylesheets().add("MainTheme.css");
+		getStylesheets().add("Vintage.css");
 
 		SongContextMenu songContext = new SongContextMenu();
 
@@ -52,87 +78,59 @@ public class MainGui extends HBox {
 			}
 		});
 
-		// Adds center pane
-		VBox centerPane = new VBox();
-		centerPane.setMaxHeight(Double.MAX_VALUE);
-		centerPane.setSpacing(4);
-
-		// Ads right pane
-		VBox rightPane = new VBox();
-
-		VBox topPane = new VBox();
-
-		Button ytbDownloaderBtn = new Button("Open Youtube downloader");
-		ytbDownloaderBtn.setOnAction(e -> {
-			displayDownloader();
-		});
-
-		// Playing options
-		ObservableList<String> options = FXCollections.observableArrayList("Normal", "Shuffle");
-		final ComboBox comboBox = new ComboBox(options);
-		comboBox.setValue("Shuffle");
-		comboBox.valueProperty().addListener((ov, s, s1) -> {
-			PlaylistController.setPlayingMode((String) s1);
-		});
-
-		songLabel = new Label("Sng name");
-		songLabel.setFont(new Font("Impact", 18));
-
-		// Adds top Player pane
-		HBox playerPane = new HBox();
-		playerPane.setSpacing(2);
-
 		// Slider
-		seekBar = new Slider();
-		seekBar.setPrefWidth(256);
-		seekBar.setMin(0);
-		seekBar.setMax(100);
+		seekBar = new JFXSliderCustom();
 		seekBar.setValue(1.0);
-		seekBar.setPadding(new Insets(5, 0, 4, 0));
+		seekBar.setMinWidth(400);
+		seekBar.setIndicatorPosition(IndicatorPosition.LEFT);
 
-		seekBar.setOnMousePressed(e -> {
-			isSeeking = true;
+		seekBar.addEventFilter(MouseEvent.MOUSE_PRESSED, new EventHandler<MouseEvent>() {
+			@Override
+			public void handle(MouseEvent mouseEvent) {
+				isSeeking = true;
+			}
 		});
+		seekBar.addEventFilter(MouseEvent.MOUSE_RELEASED, new EventHandler<MouseEvent>() {
+			@Override
+			public void handle(MouseEvent mouseEvent) {
+				isSeeking = false;
+			}
+		});
+
 		seekBar.setOnMouseClicked(m -> {
 			FXMediaPlayer.seek(seekBar.getValue());
 			isSeeking = false;
 		});
-		seekBar.setOnMouseReleased(e -> isSeeking = false);
 
-		Slider volumeBar = new Slider();
-		volumeBar.setMax(1);
-		volumeBar.setValue(1);
-		volumeBar.setPrefWidth(100);
-		volumeBar.setPadding(new Insets(5, 0, 4, 0));
+		JFXSlider volumeBar = new JFXSlider();
+		volumeBar.setMax(100);
+		volumeBar.setValue(100);
+		volumeBar.setMinWidth(100);
 		volumeBar.valueProperty().addListener(e -> {
-			FXMediaPlayer.setVolume(volumeBar.getValue());
+			FXMediaPlayer.setVolume(volumeBar.getValue() / 100);
 		});
+		volumeBar.setIndicatorPosition(IndicatorPosition.LEFT);
 
+		playImage = new ImageView(FileUtils.getAssetsImage("play.png"));
+		pauseImage = new ImageView(FileUtils.getAssetsImage("pause.png"));
+		shrinkIn = new ImageView(FileUtils.getAssetsImage("shrinkIn.png"));
+		shrinkOut = new ImageView(FileUtils.getAssetsImage("shrinkOut.png"));
+		shrinkLeft = new ImageView(FileUtils.getAssetsImage("shrinkLeft.png"));
+		shuffleOn = new ImageView(FileUtils.getAssetsImage("shuffleOn.png"));
+		shuffleOff = new ImageView(FileUtils.getAssetsImage("shuffleOff.png"));
+		repeatOn = new ImageView(FileUtils.getAssetsImage("repeatOn.png"));
+		repeatOff = new ImageView(FileUtils.getAssetsImage("repeatOff.png"));
+		
+		
 		// Play
-		Button playBtn = new Button();
-		playBtn.setGraphic(new ImageView(FileUtils.getAssetsImage("play.png")));
+		playBtn = new Button();
+		playBtn.setGraphic(playImage);
 		playBtn.setTooltip(new Tooltip("Play"));
-		playBtn.setOnAction(e -> PlaySelectedSong());
-
-		// Pause
-		Button pauseBtn = new Button();
-		pauseBtn.setGraphic(new ImageView(FileUtils.getAssetsImage("pause.png")));
-		pauseBtn.setTooltip(new Tooltip("Pause"));
-		pauseBtn.setOnAction(e -> {
-			PlayerController.pause();
-		});
-
-		// Stop
-		Button stopBtn = new Button();
-		stopBtn.setGraphic(new ImageView(FileUtils.getAssetsImage("stop.png")));
-		stopBtn.setTooltip(new Tooltip("Stop"));
-		stopBtn.setOnAction(e -> {
-			PlayerController.stop();
-		});
+		playBtn.setOnAction(e -> FXMediaPlayer.togglePlay());
 
 		// Next
 		Button nextBtn = new Button();
-		nextBtn.setGraphic(new ImageView(FileUtils.getAssetsImage("next.png")));
+		nextBtn.setGraphic(new ImageView(FileUtils.getAssetsImage("nextTrack.png")));
 		nextBtn.setTooltip(new Tooltip("Next"));
 		nextBtn.setOnAction(e -> {
 			PlaylistController.playNextSong();
@@ -140,42 +138,110 @@ public class MainGui extends HBox {
 
 		// Previous
 		Button previousBtn = new Button();
-		previousBtn.setGraphic(new ImageView(FileUtils.getAssetsImage("previous.png")));
+		previousBtn.setGraphic(new ImageView(FileUtils.getAssetsImage("previousTrack.png")));
 		previousBtn.setTooltip(new Tooltip("Previous"));
 		previousBtn.setOnAction(e -> {
 			PlaylistController.playPreviousSong();
 		});
-
-		//
-		Button shrinkBtn = new Button("卐");
-		shrinkBtn.setOnAction(e -> {
-			rightPane.setManaged(isShrinked);
-			rightPane.setVisible(isShrinked);
-
-			if (isShrinked) {
-				shrinkBtn.setText("卐");
-				Main.pStage.setWidth(Main.pStage.getWidth() + rightPane.getWidth());
-			} else {
-				shrinkBtn.setText("卍");
-				Main.pStage.setWidth(Main.pStage.getWidth() - rightPane.getWidth());
+		
+		
+		shuffleBtn = new Button();
+		shuffleBtn.setGraphic(shuffleOn);
+		shuffleBtn.setTooltip(new Tooltip("Shuffle"));
+		shuffleBtn.setOnAction(e -> {
+			if(PlaylistController.toggleShuffle()){
+				shuffleBtn.setGraphic(shuffleOn);
+			}else{
+				shuffleBtn.setGraphic(shuffleOff);
 			}
-
-			isShrinked = !isShrinked;
 		});
 
-		playerPane.getChildren().addAll(playBtn, pauseBtn, stopBtn, nextBtn, previousBtn, seekBar, volumeBar,
-				shrinkBtn);
+		
+		repeatBtn = new Button();
+		repeatBtn.setGraphic(repeatOff);
+		repeatBtn.setTooltip(new Tooltip("Repeat"));
+		repeatBtn.setOnAction(e -> {
+			if(PlaylistController.toggleRepeat()){
+				repeatBtn.setGraphic(repeatOn);
+			}else{
+				repeatBtn.setGraphic(repeatOff);
+			}
+		});
+		
+		//
+		shrinkBtn = new Button();
+		shrinkBtn.setGraphic(shrinkLeft);
+		shrinkBtn.setOnAction(e -> changeShrinkMode());
+		
+		Button settingsBtn = new Button();
+		settingsBtn.setGraphic(new ImageView(FileUtils.getAssetsImage("settings.png")));
+		settingsBtn.setOnAction(e -> {});
+		
+		Button downloaderBtn = new Button();
+		downloaderBtn.setGraphic(new ImageView(FileUtils.getAssetsImage("downloader.png")));
+		downloaderBtn.setOnAction(e -> displayDownloader());
 
-		topPane.getChildren().addAll(songLabel, playerPane);
+		songLabel = new Label("Sng name");
+		songLabel.setFont(new Font("Impact", 21));
+		songLabel.setOnMouseClicked(e -> {
+			if (e.getButton().equals(MouseButton.PRIMARY)) {
+				if (e.getClickCount() == 2) {
+					scrollToFile(PlaylistController.currentSong);
+				}
+			}
+		});// scrolls to song if doubleclicked song label
 
-		centerPane.getChildren().addAll(topPane, table);
+		Reflection reflection = new Reflection();
+		reflection.setFraction(0.2);
 
-		PlaylistPane playlistPane = new PlaylistPane();
+		albumCover = new ImageView();
+		albumCover.setFitHeight(80);
+		albumCover.setFitHeight(80);
+		albumCover.setPreserveRatio(true);
+		albumCover.setSmooth(true);
+		albumCover.setEffect(reflection);
 
-		rightPane.getChildren().addAll(comboBox, playlistPane, ytbDownloaderBtn);
+		songBackground = new ImageView();
+		
+		VBox centerPane = new VBox();
+		HBox seekPane = new HBox();
+		StackPane songLayout = new StackPane();
+		HBox songPane = new HBox();
+		HBox controllPane = new HBox();
+		HBox settingsPane = new HBox();
+		
+		songLayout.setAlignment(Pos.TOP_LEFT);
+		centerPane.setPadding(new Insets(4));
+		centerPane.setSpacing(4);
+		// seekPane.setHgrow(seekPane, Priority.ALWAYS);
+		seekPane.setSpacing(4);
+		seekPane.setPadding(new Insets(0,4,0,4));
+		songPane.setSpacing(264);
+		songPane.setAlignment(Pos.TOP_LEFT);
+		controllPane.setSpacing(2);
+		controllPane.setAlignment(Pos.CENTER_LEFT);
+		settingsPane.setAlignment(Pos.BOTTOM_RIGHT);
 
-		getChildren().addAll(centerPane, rightPane);
-		FXMediaPlayer.play(new File("T:\\Music\\Majestic\\Paradis - Hémisphère.m4a"));
+		centerPane.getChildren().addAll(songLabel,songLayout, seekPane, table);
+		songLayout.getChildren().addAll(songBackground, songPane);
+		seekPane.getChildren().addAll(seekBar, volumeBar);
+		songPane.getChildren().addAll(controllPane, settingsPane);
+		settingsPane.getChildren().addAll(downloaderBtn, settingsBtn, shrinkBtn);
+
+		controllPane.getChildren().addAll(previousBtn, playBtn, nextBtn, shuffleBtn, repeatBtn);
+
+		playlistPane = new PlaylistPane();
+
+		getChildren().addAll(centerPane, playlistPane);
+		
+		//TODO white scroll corner 
+		//TODO slider timescale
+		//TODO fully switch to jfoenix
+		//TODO settings
+		//TODO scrolling background
+		//TODO youtube downloader functionality
+		//TODO youtube downloader switch to jfoenix
+		//TODO some youtube downloading api intergration
 	}
 
 	private static PlaylistWriter.SongObject GetSelectedSong() {
@@ -191,10 +257,55 @@ public class MainGui extends HBox {
 	private static void PlaySelectedSong() {
 		PlaylistWriter.SongObject selected = GetSelectedSong();
 		if (selected != null) {
-			PlaylistController.playSong(selected.getFile());
+			PlaylistController.playSong(selected.getFile(), true);
 		}
 	}
 
+	public static void changePlayImage(boolean b){
+		Platform.runLater(new Runnable(){
+			@Override
+			public void run() {
+				if(playBtn != null && playImage != null && pauseImage != null){
+					if(b)playBtn.setGraphic(playImage);
+					else playBtn.setGraphic(pauseImage);
+					System.out.println(b);
+				}
+			}
+		});
+	}
+	public static void changeShrinkMode(){
+		Platform.runLater(new Runnable(){
+			@Override
+			public void run() {
+				shrinkMode++;
+				if(shrinkMode>2) shrinkMode = 0;
+				
+				if(shrinkMode==0){
+					playlistPane.setManaged(true);
+					playlistPane.setVisible(true);
+					table.setManaged(true);
+					table.setVisible(true);
+					
+					shrinkBtn.setGraphic(shrinkLeft);
+					Main.pStage.setHeight(Main.pStage.getHeight() + table.getHeight());
+					Main.pStage.setWidth(Main.pStage.getWidth() + playlistPane.getWidth());
+				}else if(shrinkMode==1){ //Hide playlists
+					playlistPane.setManaged(false);
+					playlistPane.setVisible(false);
+					
+					shrinkBtn.setGraphic(shrinkIn);
+					Main.pStage.setWidth(Main.pStage.getWidth() - playlistPane.getWidth());
+				}else if(shrinkMode==2){ //Compact
+					table.setManaged(false);
+					table.setVisible(false);
+					
+					Main.pStage.setHeight(Main.pStage.getHeight() - table.getHeight());
+					shrinkBtn.setGraphic(shrinkOut);
+				}
+			}
+		});
+	}
+	
 	public static void setSongName(String s) {
 		songLabel.setText(s);
 	}
@@ -290,9 +401,49 @@ public class MainGui extends HBox {
 	public static void displayDownloader() {
 		downloaderStage = new Stage();
 		YoutubeDownloaderUI ui = new YoutubeDownloaderUI();
-		Scene downloaderScene = new Scene(ui, 512,512);
-		
+		Scene downloaderScene = new Scene(ui, 512, 512);
+
 		downloaderStage.setScene(downloaderScene);
 		downloaderStage.show();
+	}
+
+	public static void scrollToFile(File song) {
+		String name = FileUtils.truncateFileType(song.getName());
+		int vIndex = -1;
+		ObservableList<PlaylistWriter.SongObject> list = table.getData();
+		for (int i = 0; i < list.size(); i++) {
+			if (name.equals(list.get(i).getName())) {
+				vIndex = i;
+				break;
+			}
+		}
+		if (vIndex > -1) {
+			table.scrollTo(vIndex);
+			table.getSelectionModel().select(vIndex);
+		}
+	}
+
+	public class JFXSliderCustom extends JFXSlider {
+		@Override
+		protected Skin<?> createDefaultSkin() {
+			return new JFXSliderSkinCustom(this);
+		}
+	}
+
+	public static void setAlbumArt(BufferedImage bi) {
+		if (albumCover != null) {
+			WritableImage wr = null;
+			if (bi != null) {
+				wr = new WritableImage(bi.getWidth(), bi.getHeight());
+				PixelWriter pw = wr.getPixelWriter();
+				for (int x = 0; x < bi.getWidth(); x++) {
+					for (int y = 0; y < bi.getHeight(); y++) {
+						pw.setArgb(x, y, bi.getRGB(x, y));
+					}
+				}
+			}
+			albumCover.setImage(wr);
+			// songBackground.setImage(wr);
+		}
 	}
 }
