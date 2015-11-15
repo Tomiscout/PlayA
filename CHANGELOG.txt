@@ -1,3 +1,9 @@
+0.8
+*Downloader single video link parsing
+*Youtube channel search
+*Download all channel uploads
+*Download thread amount selector
+
 0.7
 *Adjusted layout.
 *New css theme.
