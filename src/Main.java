@@ -53,7 +53,7 @@ public class Main extends Application {
 			pStage = primaryStage;
 			MainGui gui = new MainGui();
 
-			primaryStage.setTitle("PlayA "+"0.7");
+			primaryStage.setTitle("PlayA "+"0.8");
 			primaryStage.getIcons().add(FileUtils.getAssetsImage("Icon.png"));
 			scene = new Scene(gui, 800, 560);
 			/*scene.widthProperty().addListener(new ChangeListener<Number>() {
