@@ -46,7 +46,6 @@ public class PlaylistTable extends TableView{
 		});
 		
 		getColumns().addAll(nameColumn, countColumn, timeColumn);
-		
 		setItems(data);
 	}
 	

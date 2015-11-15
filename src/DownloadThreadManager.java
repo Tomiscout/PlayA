@@ -1,28 +1,28 @@
-import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
 
-import javafx.concurrent.Task;
-
 public class DownloadThreadManager {
 	static Vector<DownloadTask> downloadTasks = new Vector<DownloadTask>();
 	static ArrayList<DownloadTask> deletionList = new ArrayList<DownloadTask>();
 	public static boolean isRunning = false;
-	static int maxThreads = 1;
+	static int maxThreads = 2;
 	static int currentThreads = 0;
 	static ArrayList<Thread> threadList = new ArrayList<Thread>();
 	public static boolean fastDownload = false;
 	private static int listIdCount = 0;
-	static File ffmpeg = new File(Main.libDir.getAbsolutePath() + "\\ffmpeg.exe");
 
+	public static void setThreads(int i){
+		maxThreads=i;
+	}
+	
 	// Main thread for getting
 	public void startMainThread() {
 		isRunning = true;
@@ -53,7 +53,7 @@ public class DownloadThreadManager {
 			}
 		}.start();
 	}
-	
+
 	public DownloadThreadManager() {
 		startMainThread();
 	}
@@ -98,7 +98,8 @@ public class DownloadThreadManager {
 							System.out.println("M4A: " + sourceInfo.getM4ALink());
 							dlFile = new File(
 									task.getDir().getAbsolutePath() + "\\" + task.getVideo().getVideoName() + ".m4a");
-							System.out.println("Dl file of "+task.getVideo().getVideoId()+": " + dlFile.getAbsolutePath());
+							System.out.println(
+									"Dl file of " + task.getVideo().getVideoId() + ": " + dlFile.getAbsolutePath());
 							dlLink = sourceInfo.getM4ALink();
 						} else {
 							badFirstSource = true;
@@ -119,19 +120,19 @@ public class DownloadThreadManager {
 							System.out.println("Second mirror MP4: " + sourceInfo2.getMP4Link());
 						} else {
 							YoutubeDownloaderUI.WriteInfo("Can't download video. Both links down");
-							System.out.println(
-									"Both source parsers returned null. Program died of old age.");
+							System.out.println("Both source parsers returned null. Program died of old age.");
 						}
-					}else System.out.println("Can't connect to second host.");
+					} else
+						System.out.println("Can't connect to second host.");
 				}
-				
-				if(dlFile != null && dlLink != null){
-					saveUrlWithProgress(dlFile, dlLink, task.getId());
-					System.out.println("Downloaded "+dlFile.getName());
 
-					//If downloaded .mp4 file, convert
-					if(dlFile.getAbsolutePath().toLowerCase().endsWith(".mp4")){
-						
+				if (dlFile != null && dlLink != null) {
+					saveUrlWithProgress(dlFile, dlLink, task.getId());
+					System.out.println("Downloaded " + dlFile.getName());
+
+					// If downloaded .mp4 file, convert
+					if (dlFile.getAbsolutePath().toLowerCase().endsWith(".mp4")) {
+						System.out.println(task.getVideo().getVideoName() + " needs converting to mp4");
 					}
 				}
 			} catch (IOException e) {
@@ -145,18 +146,23 @@ public class DownloadThreadManager {
 			addCurrentThread(-1);
 		}
 	}
-	
-	//Downloads file and shows progress in YoutubeDownloaderUI.ProgressIndicatorBar by task id
+
+	// Downloads file and shows progress in
+	// YoutubeDownloaderUI.ProgressIndicatorBar by task id
 	public static void saveUrlWithProgress(final File file, final URL url, int id) throws IOException {
 		YoutubeDownloaderUI.ProgressIndicatorBar bar = YoutubeDownloaderUI.getListItem(id).getBar();
+
 		InputStream is = null;
 		FileOutputStream fout = null;
 		try {
 			URLConnection connection = url.openConnection();
 			connection.connect();
-			
-			int totalSize = connection.getContentLength();
-			
+
+			long totalSize = connection.getContentLengthLong();
+			if (totalSize <= 0) {
+				// Throw error
+			}
+
 			is = url.openStream();
 			fout = new FileOutputStream(file);
 
@@ -167,26 +173,29 @@ public class DownloadThreadManager {
 			int kilobytes = 0;
 			long start = System.nanoTime();
 			while ((bytesRead = is.read(buffer, 0, buffer.length)) > 0) {
-				//TODO on program exit terminate download
+				// TODO on program exit terminate download
 				fout.write(buffer, 0, bytesRead);
 				totalBytesRead += bytesRead;
 				kilobytes++;
 
-
 				double progress = (double) (totalBytesRead) / (double) (totalSize);
 				bar.setProgress(progress);
-				
+
 				// if second elapsed
 				long elapsedTime = System.nanoTime() - start;
 				if ((elapsedTime / 1000000000.0) > 1) {
 					start = System.nanoTime();
-					String progressInfo = String.format("%d% %d kB\\s", (int)(progress*100), kilobytes);
+					String progressInfo = String.format("%d%% %d kB\\s", (int) (progress * 100), kilobytes);
 					bar.setText(progressInfo);
 					kilobytes = 0;
 				}
 			}
-			//Sets progress to Completed
+			// Sets progress to Completed
 			YoutubeDownloaderUI.getListItem(id).setCompleted();
+		} catch (FileNotFoundException fio) {
+			fio.printStackTrace();
+		} catch (SecurityException se) {
+			se.printStackTrace();
 		} finally {
 			if (is != null) {
 				is.close();
@@ -195,49 +204,61 @@ public class DownloadThreadManager {
 				fout.close();
 			}
 		}
+
 	}
 
 	private synchronized void addCurrentThread(int i) {
-		System.out.println("Current threads: "+i+" input: "+i);
+		System.out.println("Current threads: " + i + " input: " + i);
 		currentThreads += i;
 	}
-	
-	//TODO adds one video
-	public static void addToQueue(YoutubeVideo video, File dir) {
-		if (dir.isDirectory()) {
-			downloadTasks.add(new DownloadTask(video, dir));
-			System.out.println("Adding new task:" + video.getVideoName());
-		}
-	}
 
-	public static void addToQueue(YoutubeVideo video, File dir, int listPlaylistId) {
-		if (dir.isDirectory()) {
-			downloadTasks.add(new DownloadTask(video, dir, listPlaylistId));
-			System.out.println("Adding new task:" + video.getVideoName());
-		}
-	}
-
-	public static void addToQueue(String playlistId, File dir, boolean sync) {
+	public static void addToQueue(String playlistId, File dir, boolean merge) {
 		new Thread() {
 			public void run() {
 				System.out.println("Getting playlist videos from youtube...");
 
 				int listPlaylistId = provideListItemId();
-				YoutubeDownloaderUI.addListItem(dir.getName(), listPlaylistId, false);
-				YoutubeDownloaderUI.refreshList();
 
 				List<YoutubeVideo> vids = YtDownloadUtils.getVideosFromPlaylist(playlistId);
 
-				YoutubeDownloaderUI.getListItem(listPlaylistId).getBar().setTotalWork(vids.size());
-
+				System.out.println("Got "+vids.size()+" videos");
+				//YoutubeDownloaderUI.getListItem(listPlaylistId).getBar().setTotalWork(vids.size());
+				
+				int existingSongs = 0;
 				for (YoutubeVideo v : vids) {
-					addToQueue(v, dir, listPlaylistId);
+					if (dir.isDirectory()) {
+						// Merge feature
+						if (merge && new File(dir.getAbsolutePath() + "\\" + v.getVideoName() + ".m4a").exists()) {
+							existingSongs++;
+						} else {
+							downloadTasks.add(new DownloadTask(v, dir, listPlaylistId));
+							System.out.println("Adding child task:" + v.getVideoName() + ", parent:" + listPlaylistId);
+						}
+
+					}
 				}
+				System.out.println("Existing songs: "+existingSongs);
 				YoutubeDownloaderUI.refreshList();
 			}
 		}.start();
 	}
-	
+
+	public static void addToQueueSingle(String videoId, File dir) {
+		new Thread() {
+			public void run() {
+				String name = YtDownloadUtils.getVideoName(videoId);
+
+				YoutubeVideo video = new YoutubeVideo(name, videoId);
+
+				if (dir.isDirectory()) {
+					downloadTasks.add(new DownloadTask(video, dir));
+					System.out.println("Adding new task:" + video.getVideoName());
+					YoutubeDownloaderUI.refreshList();
+				}
+			}
+		}.start();
+	}
+
 	static class DownloadTask {
 		private YoutubeVideo video;
 		private File dir;
@@ -250,7 +271,7 @@ public class DownloadThreadManager {
 			this.video = video;
 			this.dir = dir;
 			listId = provideListItemId();
-			YoutubeDownloaderUI.addListItem(video.getVideoName(), listId, false);
+			YoutubeDownloaderUI.addListItem(video.getVideoName(), listId);
 		}
 
 		public DownloadTask(YoutubeVideo video, File dir, int listPlaylistId) {
@@ -258,7 +279,7 @@ public class DownloadThreadManager {
 			this.dir = dir;
 			listId = provideListItemId();
 			this.listPlaylistId = listPlaylistId;
-			YoutubeDownloaderUI.addListItem(video.getVideoName(), listId, false);
+			YoutubeDownloaderUI.addListItem(video.getVideoName(), listId);
 		}
 
 		public YoutubeVideo getVideo() {
@@ -293,6 +314,8 @@ public class DownloadThreadManager {
 			complete = true;
 			if (listPlaylistId > 0) {
 				YoutubeDownloaderUI.getListItem(listPlaylistId).plusDownloaded();
+			}else{
+				YoutubeDownloaderUI.getListItem(listId).getBar().complete();
 			}
 		}
 

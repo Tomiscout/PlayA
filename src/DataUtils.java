@@ -1,6 +1,17 @@
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.image.BufferedImage;
+import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+
+import javax.imageio.ImageIO;
+
+import javafx.embed.swing.SwingFXUtils;
 
 public class DataUtils {
 
@@ -38,6 +49,27 @@ public class DataUtils {
 			string += secs;
 
 		return string;
+	}
+
+	public static BufferedImage downloadImage(URL url) {
+		try {
+			InputStream in = new BufferedInputStream(url.openStream());
+			ByteArrayOutputStream out = new ByteArrayOutputStream();
+			byte[] buf = new byte[1024];
+			int n = 0;
+			while (-1 != (n = in.read(buf))) {
+				out.write(buf, 0, n);
+			}
+			out.close();
+			in.close();
+			byte[] byteArray = out.toByteArray();
+			ByteArrayInputStream inByte = new ByteArrayInputStream(byteArray);
+			BufferedImage read = ImageIO.read(inByte);
+			return read;
+		} catch (IOException ioe) {
+			ioe.printStackTrace();
+		}
+		return null;
 	}
 
 	public static BufferedImage toBufferedImage(Image img) {

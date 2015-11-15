@@ -231,17 +231,14 @@ public class MainGui extends HBox {
 		controllPane.getChildren().addAll(previousBtn, playBtn, nextBtn, shuffleBtn, repeatBtn);
 
 		playlistPane = new PlaylistPane();
-
+		playlistPane.setPadding(new Insets(4));
+		
 		getChildren().addAll(centerPane, playlistPane);
 		
 		//TODO white scroll corner 
 		//TODO slider timescale
-		//TODO fully switch to jfoenix
 		//TODO settings
-		//TODO scrolling background
-		//TODO youtube downloader functionality
-		//TODO youtube downloader switch to jfoenix
-		//TODO some youtube downloading api intergration
+		//TODO scrolling background and visuals
 	}
 
 	private static PlaylistWriter.SongObject GetSelectedSong() {

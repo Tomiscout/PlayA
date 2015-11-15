@@ -1,19 +1,26 @@
 import java.awt.Toolkit;
 import java.awt.datatransfer.DataFlavor;
+import java.awt.image.BufferedImage;
 import java.io.File;
+import java.net.URL;
 import java.util.ArrayList;
-import java.util.Vector;
+import java.util.Optional;
 
-import com.sun.prism.paint.Color;
+import com.jfoenix.controls.JFXProgressBar;
 
+import javafx.scene.input.KeyCode;
 import javafx.application.Platform;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.embed.swing.SwingFXUtils;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
@@ -21,9 +28,10 @@ import javafx.scene.control.MultipleSelectionModel;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.ToggleGroup;
-import javafx.scene.layout.Background;
-import javafx.scene.layout.BackgroundFill;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
@@ -39,17 +47,24 @@ import javafx.stage.Stage;
 import javafx.util.Callback;
 
 public class YoutubeDownloaderUI extends BorderPane {
+	static final int MAXTHREADS = 16;
 	static ArrayList<ListItem> itemList = new ArrayList<ListItem>();
 	static ObservableList<ListItem> visibleList = FXCollections.observableArrayList();
+	static ObservableList<SearchListItem> searchList = FXCollections.observableArrayList();
 
-	ListView itemView;
+	static ListView<ListItem> itemView;
+	static ListView<SearchListItem> searchView;
+	
+
 	HBox buttonPane;
 	static Label infoLabel = new Label();
 	static Stage downloadOptionsWindow;
+	static Stage channelSearchWindow;
+	static ProgressBar playlistProgressBar;
 
 	public YoutubeDownloaderUI() {
 		// getStylesheets().add("DownloaderTheme.css");
-		itemView = new ListView(visibleList);
+		itemView = new ListView<ListItem>(visibleList);
 		itemView.setSelectionModel(new DisabledSelectionModel<ListItem>());
 		itemView.setMaxHeight(Double.MAX_VALUE);
 		itemView.setCellFactory(new Callback<ListView<ListItem>, ListCell<ListItem>>() {
@@ -94,9 +109,10 @@ public class YoutubeDownloaderUI extends BorderPane {
 		});
 
 		buttonPane = new HBox();
+		buttonPane.setPadding(new Insets(4));
+		buttonPane.setSpacing(4);
 		Button pasteBtn = new Button("Paste link");
 		pasteBtn.setOnAction(e -> {
-			// TODO add item to list
 			String clipboard = null;
 			try {
 				clipboard = (String) Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor);
@@ -107,13 +123,51 @@ public class YoutubeDownloaderUI extends BorderPane {
 			YtDownloadUtils.parseLink(clipboard);
 		});
 
-		buttonPane.getChildren().addAll(pasteBtn, infoLabel);
+		Button channelBtn = new Button("Search for channels");
+		channelBtn.setOnAction(e -> {
+			displaySearchWindow();
+		});
+		
+		playlistProgressBar = new ProgressBar();
+		playlistProgressBar.setPrefWidth(230);
+		playlistProgressBar.setVisible(false);
+		
+		ObservableList<Integer> threadOptions = FXCollections.observableArrayList();
+		for(int i = 1; i <= MAXTHREADS; i++) threadOptions.add(new Integer(i));
+		
+		ComboBox<Integer> threadCombo = new ComboBox<Integer>(threadOptions);
+		threadCombo.setValue(new Integer(2));
+		threadCombo.valueProperty().addListener(new ChangeListener<Integer>() {
+            @Override public void changed(ObservableValue<? extends Integer> ov, Integer t, Integer t1) {
+            	DownloadThreadManager.setThreads(t1.intValue());
+            }    
+        });
+		
+		buttonPane.getChildren().addAll(pasteBtn, channelBtn, infoLabel, playlistProgressBar, threadCombo);
 
 		setCenter(itemView);
 		setBottom(buttonPane);
 
+		setPadding(new Insets(4));
+		
 		// Starts main downloader thread
 		new DownloadThreadManager();
+	}
+	
+	public static void setPlaylistProgressVisible(boolean visible){
+		Platform.runLater(new Runnable(){
+			public void run(){
+				playlistProgressBar.setVisible(visible);
+			}
+		});
+	}
+	
+	public static void setPlaylistProgress(double progress){
+		Platform.runLater(new Runnable(){
+			public void run(){
+				playlistProgressBar.setProgress(progress);
+			}
+		});
 	}
 
 	public static void WriteInfo(String i) {
@@ -133,14 +187,14 @@ public class YoutubeDownloaderUI extends BorderPane {
 		private String name;
 		private int songCount;
 		private int downloadedSongCount = 0;
-		private boolean hidden = false;
 		ProgressIndicatorBar bar;
 
-		public ListItem(String name, int id, boolean hidden) {
+		// if int parent == -1, it means that this item is parent, else it
+		// specifies parent item id
+		public ListItem(String name, int id) {
 			this.name = name;
 			this.songCount = 1;
 			this.id = id;
-			this.hidden = hidden;
 			this.bar = new ProgressIndicatorBar();
 		}
 
@@ -169,22 +223,15 @@ public class YoutubeDownloaderUI extends BorderPane {
 			return id;
 		}
 
-		public boolean isHidden() {
-			return hidden;
-		}
-
-		public void setHide(boolean hidden) {
-			this.hidden = hidden;
-		}
-		
-		public void setCompleted(){
-			bar.setText("100%");
-			bar.setProgress(1);
+		public void setCompleted() {
+			bar.setDisable(true);
+			bar.setManaged(false);
+			bar.setText("Done!");
 		}
 	}
 
-	public static synchronized void addListItem(String name, int id, boolean hide) {
-		itemList.add(new ListItem(name, id, hide));
+	public static synchronized void addListItem(String name, int id) {
+		itemList.add(new ListItem(name, id));
 	}
 
 	// Recalculates visible list items
@@ -194,65 +241,219 @@ public class YoutubeDownloaderUI extends BorderPane {
 			public void run() {
 				visibleList.clear();
 				for (ListItem item : itemList) {
-					if (!item.isHidden()) {
-						visibleList.add(item);
-					}
+					visibleList.add(item);
 				}
 			}
 		});
+	}
 
+	public static void refreshSearchList() {
+		if (searchView != null) {
+			searchView.setItems(null);
+			searchView.setItems(searchList);
+		}
 	}
 
 	public static void displayDownloadOptions(String videoId, String playlistId) {
-		downloadOptionsWindow = new Stage();
-		downloadOptionsWindow.initModality(Modality.APPLICATION_MODAL);
-		downloadOptionsWindow.setTitle("Download options");
-		downloadOptionsWindow.setWidth(410);
-		downloadOptionsWindow.setResizable(false);
+		closeSearchWindow();
+		Platform.runLater(new Runnable(){
+			public void run() {
+				downloadOptionsWindow = new Stage();
+				downloadOptionsWindow.initModality(Modality.APPLICATION_MODAL);
+				downloadOptionsWindow.setTitle("Download options");
+				downloadOptionsWindow.setWidth(410);
+				downloadOptionsWindow.setResizable(false);
 
-		if (playlistId == null)
-			downloadOptionsWindow.setHeight(114);
-		else
-			downloadOptionsWindow.setHeight(136);
+				if (playlistId == null)
+					downloadOptionsWindow.setHeight(114);
+				else
+					downloadOptionsWindow.setHeight(136);
 
-		Scene scene = new Scene(new DownloadOptionsPane(videoId, playlistId));
-		downloadOptionsWindow.setScene(scene);
-		downloadOptionsWindow.showAndWait();
+				Scene scene = new Scene(new DownloadOptionsPane(videoId, playlistId));
+				downloadOptionsWindow.setScene(scene);
+				downloadOptionsWindow.showAndWait();
+			}
+		});
 	}
 
 	public static void closeDownloadOptions() {
 		if (downloadOptionsWindow != null) {
 			downloadOptionsWindow.close();
+			downloadOptionsWindow = null;
+		}
+	}
+	
+	public static void displaySearchWindow(){
+		closeDownloadOptions();
+		channelSearchWindow = new Stage();
+		channelSearchWindow.initModality(Modality.APPLICATION_MODAL);
+		channelSearchWindow.setTitle("Channel search");
+		channelSearchWindow.setWidth(360);
+		channelSearchWindow.setHeight(472);
+
+		Scene scene = new Scene(new ChannelSearchPane());
+		channelSearchWindow.setScene(scene);
+		channelSearchWindow.showAndWait();
+	}
+	public static void closeSearchWindow(){
+		if(channelSearchWindow != null){
+			channelSearchWindow.close();
+			channelSearchWindow = null;
 		}
 	}
 
 	static RadioButton rb1 = null;
 	static CheckBox cb = null;
 
+	static class ChannelSearchPane extends BorderPane {
+		public ChannelSearchPane() {
+			searchView = new ListView<SearchListItem>(searchList);
+			searchView.setCellFactory(new Callback<ListView<SearchListItem>, ListCell<SearchListItem>>() {
+				@Override
+				public ListCell<SearchListItem> call(ListView<SearchListItem> param) {
+					ListCell<SearchListItem> cell = new ListCell<SearchListItem>() {
+						@Override
+						protected void updateItem(SearchListItem item, boolean empty) {
+							super.updateItem(item, empty);
+							if (item != null) {
+								if (empty || item == null) {
+									setGraphic(null);
+								} else {
+									HBox cellContent = new HBox();
+
+									ImageView image = new ImageView();
+									image.setImage(item.getThumbnail());
+									image.setFitHeight(64);
+									image.setFitWidth(64);
+
+									VBox textContent = new VBox();
+
+									Label nameLabel = new Label(item.getName());
+									nameLabel.setFont(new Font("Tahoma", 22));
+									Label bottomLabel = new Label(item.getBottomText());
+									bottomLabel.setFont(new Font("Tahoma", 14));
+
+									textContent.getChildren().addAll(nameLabel, bottomLabel);
+
+									cellContent.setSpacing(8);
+									cellContent.getChildren().addAll(image, textContent);
+									setGraphic(cellContent);
+								}
+
+							}
+						}
+					};
+
+					return cell;
+				}
+			});
+
+			searchView.setOnMouseClicked(click -> {
+				if (click.getClickCount() == 2) {
+					// Parses channel to download options window
+					SearchListItem selected = searchView.getSelectionModel().getSelectedItem();
+					if(selected != null){
+						System.out.println("parsing :"+selected.getUploadId());
+						displayDownloadOptions(null, selected.getUploadId());
+					}
+				}
+
+			});
+
+			HBox inputPane = new HBox();
+			inputPane.setPadding(new Insets(4));
+			inputPane.setSpacing(4);
+
+			Label textLabel = new Label("Channel:");
+			TextField inputField = new TextField();
+			inputField.setOnKeyPressed(key -> {
+				if (key.getCode().equals(KeyCode.ENTER)) {
+					searchList.clear();
+					YtDownloadUtils.SearchForChannel(inputField.getText());
+				}
+			});
+
+			Button searchBtn = new Button("Search");
+			searchBtn.setOnAction(e -> {
+				searchList.clear();
+				YtDownloadUtils.SearchForChannel(inputField.getText());
+			});
+
+			inputPane.getChildren().addAll(textLabel, inputField, searchBtn);
+
+			setCenter(searchView);
+			setTop(inputPane);
+			setPadding(new Insets(4));
+		}
+	}
+
+	public static void addSearchItem(String name, int videoCount, String uploadId, URL thumbnail) {
+		searchList.add(new SearchListItem(name, videoCount, uploadId, thumbnail));
+	}
+
+	static class SearchListItem {
+		protected int id;
+		private String name;
+		private String uploadId;
+		private String bottomText = "";
+		private Image thumbImage;
+
+		public SearchListItem(String name, int videoCount, String uploadId, URL thumbnail) {
+			this.name = name;
+			this.uploadId = uploadId;
+			bottomText = "Uploads: " + videoCount;
+
+			if (thumbnail != null) {
+				// Downloads image in separate thread
+				new Thread() {
+					public void run() {
+						BufferedImage thumb = DataUtils.downloadImage(thumbnail);
+						if(thumb != null) thumbImage = SwingFXUtils.toFXImage(thumb, null);
+					}
+				}.start();
+			}
+		}
+
+		public String getBottomText() {
+			return bottomText;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public String getUploadId() {
+			return uploadId;
+		}
+
+		public Image getThumbnail() {
+			return thumbImage;
+		}
+	}
+
 	static class DownloadOptionsPane extends GridPane {
 		public DownloadOptionsPane(String videoId, String playlistId) {
-			if (videoId != null) {
+			if (videoId != null || playlistId != null) {
 				TextField tf = new TextField(); // TODO add default dir
 				Button chooserButton = new Button("Select folder");
 				chooserButton.setMaxWidth(Double.MAX_VALUE);
 				chooserButton.setOnAction(e -> {
 					DirectoryChooser chooser = new DirectoryChooser();
-					chooser.setTitle("JavaFX Projects");
+					chooser.setTitle("Choose folder");
 					File defaultDirectory = new File("c:/");
 					chooser.setInitialDirectory(defaultDirectory);
 					File selectedDirectory = chooser.showDialog(downloadOptionsWindow);
-					tf.setText(selectedDirectory.getAbsolutePath());
+					if(selectedDirectory != null) tf.setText(selectedDirectory.getAbsolutePath());
 				});
 
 				Button downloadButton = new Button("Download");
 				downloadButton.setMaxWidth(Double.MAX_VALUE);
 				downloadButton.setOnAction(e -> {
-
 					File tempFile = new File(tf.getText());
 					if (tempFile.exists() && tempFile.isDirectory()) {
-						if (rb1.isSelected()) {
-							if (cb != null && cb.isSelected()) {
-								// sync feature
+						if (rb1 != null && rb1.isSelected()) {
+							if (cb != null && cb.isSelected() && playlistId != null) {
+								// merge feature
 								DownloadThreadManager.addToQueue(playlistId, tempFile, true);
 							} else {
 								// Add playlist to download quota
@@ -260,8 +461,7 @@ public class YoutubeDownloaderUI extends BorderPane {
 							}
 						} else {
 							// Add to download quota
-							DownloadThreadManager.addToQueue(new DownloadThreadManager.YoutubeVideo("le neim", videoId),
-									tempFile);
+							if(videoId != null)	DownloadThreadManager.addToQueueSingle(videoId, tempFile);
 						}
 						closeDownloadOptions();
 					} else {
@@ -279,8 +479,9 @@ public class YoutubeDownloaderUI extends BorderPane {
 					RadioButton rb2 = new RadioButton("One video only");
 					rb2.setToggleGroup(group);
 
-					cb = new CheckBox("Synced");
-
+					cb = new CheckBox("Merge");
+					cb.setSelected(true);
+					
 					group.selectedToggleProperty().addListener((ov, oldToggle, newToggle) -> {
 						if (group.getSelectedToggle() == rb1) {
 							cb.setDisable(false);
@@ -327,8 +528,6 @@ public class YoutubeDownloaderUI extends BorderPane {
 		final private ProgressBar bar = new ProgressBar();
 		final private Text text = new Text();
 
-		final private static int DEFAULT_LABEL_PADDING = 5;
-
 		ProgressIndicatorBar() {
 			bar.setMaxWidth(Double.MAX_VALUE);
 			setWorkDone(0);
@@ -352,7 +551,7 @@ public class YoutubeDownloaderUI extends BorderPane {
 			}
 		}
 
-		public void setText(String barText){
+		public void setText(String barText) {
 			Platform.runLater(new Runnable() {
 				@Override
 				public void run() {
@@ -376,6 +575,11 @@ public class YoutubeDownloaderUI extends BorderPane {
 					bar.setProgress(progress);
 				}
 			});
+		}
+
+		public void complete() {
+			setProgress(1);
+			setText("Done!");
 		}
 	}
 }
@@ -449,5 +653,4 @@ class DisabledSelectionModel<T> extends MultipleSelectionModel<T> {
 	@Override
 	public void selectPrevious() {
 	}
-
 }

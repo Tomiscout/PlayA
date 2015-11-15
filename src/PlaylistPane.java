@@ -58,7 +58,7 @@ public class PlaylistPane extends VBox {
 		setSpacing(5);
 		setPadding(new Insets(10, 0, 0, 10));
 		getChildren().addAll(folderTable);
-		setMinWidth(260);
+		setMinWidth(240);
 
 		setOnDragOver(event -> {
 			if (event.getGestureSource() != this) {
@@ -75,6 +75,8 @@ public class PlaylistPane extends VBox {
 			handlePlaylistDrop(buffer);
 			event.consume();
 		});
+		
+		setPadding(new Insets(4));
 
 		// Loading playlist
 		reloadPlaylists();
