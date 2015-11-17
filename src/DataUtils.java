@@ -5,12 +5,9 @@ import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.nio.channels.FileChannel;
-import java.util.Collections;
 import java.util.List;
 
 import javax.imageio.ImageIO;
@@ -26,19 +23,11 @@ import org.jaudiotagger.tag.images.Artwork;
 
 import com.coremedia.iso.IsoFile;
 import com.coremedia.iso.boxes.Box;
-import com.coremedia.iso.boxes.Container;
-import com.coremedia.iso.boxes.FileTypeBox;
-import com.coremedia.iso.boxes.HandlerBox;
-import com.coremedia.iso.boxes.MediaBox;
 import com.coremedia.iso.boxes.MetaBox;
 import com.coremedia.iso.boxes.MovieBox;
-import com.coremedia.iso.boxes.TrackBox;
 import com.coremedia.iso.boxes.UserDataBox;
 import com.coremedia.iso.boxes.apple.AppleItemListBox;
-import com.coremedia.iso.boxes.mdat.MediaDataBox;
-import com.googlecode.mp4parser.BasicContainer;
 import com.googlecode.mp4parser.DirectFileReadDataSource;
-import com.googlecode.mp4parser.authoring.Movie;
 import com.googlecode.mp4parser.boxes.apple.AppleCoverBox;
 
 public class DataUtils {

@@ -19,8 +19,8 @@ public class PlayA extends Application {
 	static boolean is64bit = false;
 	static boolean isEclipse = true;
 
-	static final double MINWIDTH = 800;
-	static final double MINHEIGHT = 560;
+	static final double MINWIDTH = 574;
+	static final double MINHEIGHT = 144;
 	
 	public static void main(String[] args) {
 		launch(args);
@@ -34,7 +34,7 @@ public class PlayA extends Application {
 
 			primaryStage.setTitle("PlayA " + VERSION);
 			primaryStage.getIcons().add(FileUtils.getAssetsImage("Icon.png"));
-			scene = new Scene(gui, MINWIDTH, MINHEIGHT);
+			scene = new Scene(gui, 800, 560);
 
 			primaryStage.setScene(scene);
 			primaryStage.show();
@@ -113,7 +113,7 @@ public class PlayA extends Application {
 					JintelliLib = libDir.getAbsolutePath() + "\\JIntellitype.dll";
 				}
 			}
-			System.out.println("Loading JLintelliType:"+JintelliLib);
+			System.out.println("Loading JLintelliType: "+JintelliLib);
 			
 			JIntellitype.setLibraryLocation(JintelliLib);
 		} catch (Exception e) {
@@ -123,9 +123,9 @@ public class PlayA extends Application {
 	
 	public static void setWidth(double width){
 		if(width<MINWIDTH)
-			pStage.setHeight(MINWIDTH);
+			pStage.setWidth(MINWIDTH);
 		else
-			pStage.setHeight(width);
+			pStage.setWidth(width);
 	}
 	public static void setHeight(double height){
 		if(height<MINHEIGHT)

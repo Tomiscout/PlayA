@@ -45,4 +45,10 @@ public class SongTable extends TableView {
 	public ObservableList<PlaylistWriter.SongObject> getData(){
 		return data;
 	}
+	public void setList(ObservableList<PlaylistWriter.SongObject> list){
+		setItems(list);
+	}
+	public void resetList(){
+		setItems(data);
+	}
 }

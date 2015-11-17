@@ -145,7 +145,7 @@ public class PlaylistWriter {
 					PlaylistHeader ph = new PlaylistHeader(fileName, 0, songLengths, songCount);
 					appendFirstLine(playlistFile, ph.toString());
 
-					PlaylistPane.folderTable.data.add(ph.getPlaylistObject());
+					PlaylistPane.data.add(ph.getPlaylistObject());
 
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -466,7 +466,7 @@ public class PlaylistWriter {
 		return workingDir;
 	}
 
-	public static void rescanPlaylist(PlaylistObject po) {
+	public static void rescanPlaylist(PlaylistPane.PlaylistObject po) {
 		File tFile = new File(getWorkingDir().getAbsolutePath() + "\\" + po.getName() + ".plp");
 		ArrayList<File> folders = new ArrayList<File>();
 		String rootDir;

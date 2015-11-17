@@ -18,6 +18,10 @@ import java.util.ArrayList;
 import javax.swing.ImageIcon;
 import javax.swing.filechooser.FileSystemView;
 
+import com.coremedia.iso.IsoFile;
+import com.googlecode.mp4parser.DirectFileReadDataSource;
+import com.googlecode.mp4parser.MemoryDataSourceImpl;
+
 import javafx.scene.image.Image;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
@@ -159,6 +163,23 @@ public class FileUtils {
 
 	public static long getSongLength(File file) {
 		long length = -1;
+		if(file.getAbsolutePath().endsWith(".m4a")){
+			IsoFile isoFile = null;
+			try{
+				isoFile = new IsoFile(new DirectFileReadDataSource(file));
+			    double lengthInSeconds = (double)isoFile.getMovieBox().getMovieHeaderBox().getDuration() / isoFile.getMovieBox().getMovieHeaderBox().getTimescale();
+			    return (long)lengthInSeconds;
+			}catch(IOException ioe){
+				ioe.printStackTrace();
+			}finally{
+				if(isoFile != null)
+					try {
+						isoFile.close();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+			}
+		}else
 		try {
 			String filePath = null;
 			try {

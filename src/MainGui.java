@@ -7,8 +7,10 @@ import java.util.Optional;
 
 import com.jfoenix.controls.JFXSlider;
 import com.jfoenix.controls.JFXSlider.IndicatorPosition;
+import com.jfoenix.controls.JFXTextField;
 
 import javafx.application.Platform;
+import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
@@ -21,11 +23,13 @@ import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.Skin;
+import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
 import javafx.scene.effect.Reflection;
 import javafx.scene.image.ImageView;
 import javafx.scene.image.PixelWriter;
 import javafx.scene.image.WritableImage;
+import javafx.scene.input.KeyCode;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
@@ -40,9 +44,11 @@ public class MainGui extends HBox {
 	static JFXSliderCustom seekBar;
 	static SongTable table;
 	static Label songLabel = null;
+	static Label songLengthLabel = null;
 	static ImageView albumCover;
 	static ImageView songBackground;
 	private static boolean isSeeking = false;
+	private static boolean searchMode = false;
 	private static int shrinkMode = 0;
 	private static ImageView playImage;
 	private static ImageView pauseImage;
@@ -57,6 +63,7 @@ public class MainGui extends HBox {
 	private static Button shrinkBtn;
 	private static Button shuffleBtn;
 	private static Button repeatBtn;
+	private static ObservableList<PlaylistWriter.SongObject> searchList = FXCollections.observableArrayList();
 
 	public MainGui() {
 		getStylesheets().add("Vintage.css");
@@ -74,6 +81,13 @@ public class MainGui extends HBox {
 		});
 
 		// Slider
+		songLengthLabel = new Label("00:00");
+		songLengthLabel.setFont(new Font(12));
+		BorderPane lengthLabelPane = new BorderPane();
+		lengthLabelPane.setPadding(new Insets(-12,4,0,0));
+		lengthLabelPane.setRight(songLengthLabel);
+
+		
 		seekBar = new JFXSliderCustom();
 		seekBar.setValue(1.0);
 		seekBar.setMinWidth(400);
@@ -96,6 +110,9 @@ public class MainGui extends HBox {
 			FXMediaPlayer.seek(seekBar.getValue());
 			isSeeking = false;
 		});
+		
+		StackPane songSeekPane = new StackPane();
+		songSeekPane.getChildren().addAll(lengthLabelPane, seekBar);
 
 		JFXSlider volumeBar = new JFXSlider();
 		volumeBar.setMax(100);
@@ -162,15 +179,45 @@ public class MainGui extends HBox {
 				repeatBtn.setGraphic(repeatOff);
 			}
 		});
+		TextField searchField = new TextField();
+		searchField.setVisible(false);
+		searchField.setManaged(false);
+		searchField.setDisable(true);
+		searchField.setOnKeyPressed(key -> {
+				Platform.runLater(new Runnable(){
+					public void run(){
+						searchForSong(searchField.getText());
+					}
+				});
+		});
 		
-		//
-		shrinkBtn = new Button();
-		shrinkBtn.setGraphic(shrinkLeft);
-		shrinkBtn.setOnAction(e -> changeShrinkMode());
+		Button searchBtn = new Button();
+		searchBtn.setGraphic(new ImageView(FileUtils.getAssetsImage("search.png")));
+		searchBtn.setOnAction(a -> {
+			if(searchMode){
+				turnOffSearch();
+				searchField.setVisible(false);
+				searchField.setManaged(false);
+				searchField.setDisable(true);
+				searchMode = false;
+			}else{
+				searchField.setVisible(true);
+				searchField.setManaged(true);
+				searchField.setDisable(false);
+				searchField.requestFocus();
+				searchMode = true;
+			}
+		});
 		
 		Button settingsBtn = new Button();
 		settingsBtn.setGraphic(new ImageView(FileUtils.getAssetsImage("settings.png")));
 		settingsBtn.setOnAction(e -> {});
+		
+		shrinkBtn = new Button();
+		shrinkBtn.setGraphic(shrinkLeft);
+		shrinkBtn.setOnAction(e -> changeShrinkMode());
+		
+		
 		
 		songLabel = new Label("Sng name");
 		songLabel.setFont(new Font("Impact", 21));
@@ -211,12 +258,12 @@ public class MainGui extends HBox {
 
 		songPane.setLeft(controllPane);
 		songPane.setRight(settingsPane);
-		seekPane.setLeft(seekBar);
+		seekPane.setLeft(songSeekPane);
 		seekPane.setRight(volumeBar);
 		
 		centerPane.getChildren().addAll(songLabel,songLayout, seekPane, table);
 		songLayout.getChildren().addAll(songBackground, songPane);
-		settingsPane.getChildren().addAll(settingsBtn, shrinkBtn);
+		settingsPane.getChildren().addAll(searchField, searchBtn, settingsBtn, shrinkBtn);
 
 		controllPane.getChildren().addAll(previousBtn, playBtn, nextBtn, shuffleBtn, repeatBtn);
 
@@ -224,9 +271,8 @@ public class MainGui extends HBox {
 		playlistPane.setPadding(new Insets(4));
 		
 		getChildren().addAll(centerPane, playlistPane);
-		
 		//TODO white scroll corner 
-		//TODO slider timescale
+		
 		//TODO settings
 		//TODO scrolling background and visuals
 	}
@@ -255,7 +301,6 @@ public class MainGui extends HBox {
 				if(playBtn != null && playImage != null && pauseImage != null){
 					if(b)playBtn.setGraphic(playImage);
 					else playBtn.setGraphic(pauseImage);
-					System.out.println(b);
 				}
 			}
 		});
@@ -281,12 +326,12 @@ public class MainGui extends HBox {
 					playlistPane.setVisible(false);
 					
 					shrinkBtn.setGraphic(shrinkIn);
-					PlayA.pStage.setWidth(PlayA.pStage.getWidth() - playlistPane.getWidth());
+					PlayA.setWidth(PlayA.pStage.getWidth() - playlistPane.getWidth());
 				}else if(shrinkMode==2){ //Compact
 					table.setManaged(false);
 					table.setVisible(false);
 					
-					PlayA.pStage.setHeight(PlayA.pStage.getHeight() - table.getHeight());
+					PlayA.setHeight(PlayA.pStage.getHeight() - table.getHeight());
 					shrinkBtn.setGraphic(shrinkOut);
 				}
 			}
@@ -423,5 +468,22 @@ public class MainGui extends HBox {
 			albumCover.setImage(wr);
 			// songBackground.setImage(wr);
 		}
+	}
+	
+	public static void searchForSong(String text){
+		searchList.clear();
+		for(PlaylistWriter.SongObject so : table.getData()){
+			if(so.getName().toLowerCase().contains(text)){
+				searchList.add(so);
+			}
+		}
+		table.setList(searchList);
+	}
+	public static void turnOffSearch(){
+		table.resetList();
+		searchList.clear();
+	}
+	public static void setSongLengthLabel(long length){
+		songLengthLabel.setText(DataUtils.formatSeconds(length, false));
 	}
 }

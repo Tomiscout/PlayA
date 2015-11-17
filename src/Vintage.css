@@ -17,6 +17,11 @@
 	-fx-background-color: #93f4ec;
 }
 
+.text-field{
+	-fx-background-color: #664b44;
+	-fx-text-fill: #fbe6b7;
+}
+
 .table-view{
 	-fx-background: #5a423c;
    -fx-background-color:#3f2f2a;

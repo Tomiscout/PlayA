@@ -66,6 +66,8 @@ public class FXMediaPlayer {
 		} else if (".m4a".equals(ext) || ".mp4".equals(ext)) {
 			MainGui.setAlbumArt(DataUtils.getCoverArtFromMp4File(song));
 		}*/
+		
+		MainGui.setSongLengthLabel(FileUtils.getSongLength(song));
 
 		MainGui.scrollToFile(song);
 		MainGui.setSongName(FileUtils.truncateFileType(song.getName()));

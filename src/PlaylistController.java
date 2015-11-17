@@ -19,8 +19,8 @@ public class PlaylistController {
 
 	public static void openPlaylist(String name, boolean clearList) {
 		String[] songs = PlaylistWriter.readPlaylist(name);
-		
-		if(clearList){
+
+		if (clearList) {
 			currentSongs.clear();
 			MainGui.table.getData().clear();
 		}
@@ -34,7 +34,7 @@ public class PlaylistController {
 	}
 
 	public static void openPlaylist(String[] names, boolean clearList) {
-		if(clearList){
+		if (clearList) {
 			currentSongs.clear();
 			MainGui.table.getData().clear();
 		}
@@ -51,10 +51,10 @@ public class PlaylistController {
 		if (currentSong == null)
 			return;
 
-		//Gives priority to repeating song
-		if(isRepeat){
+		// Gives priority to repeating song
+		if (isRepeat) {
 			playSong(currentSong, true);
-		}else if (isShuffle) {
+		} else if (isShuffle) {
 			Random rand = new Random();
 			int randomNum;
 			boolean isSame = false;
@@ -92,7 +92,7 @@ public class PlaylistController {
 						return;
 					} else {
 						previousSongs.add(currentSong);
-						
+
 						playSong(currentSongs.get(i + 1), true);
 						return;
 					}
@@ -126,96 +126,26 @@ public class PlaylistController {
 		isShuffle = !isShuffle;
 		return isShuffle;
 	}
-	public static boolean toggleRepeat(){
+
+	public static boolean toggleRepeat() {
 		isRepeat = !isRepeat;
 		return isRepeat;
 	}
 
 	public static void DeleteSelectedPlaylists() {
-		Alert alert = new Alert(AlertType.CONFIRMATION);
-		alert.setTitle("Playlist deletion");
-		alert.setHeaderText("Are you sure?");
-		ObservableList<PlaylistObject> list = PlaylistPane.getCurrentSelectedItems();
-		PlaylistObject[] listArray = list.toArray(new PlaylistObject[list.size()]);
-
-		if (list != null) {
-			alert.setContentText("Do you want to delete " + list.size() + " playlist(s)?");
-			Optional<ButtonType> result = alert.showAndWait();
-
-			if (result.get() == ButtonType.OK) {
-				for (PlaylistObject po : listArray) {
-					String s = po.getName();
-					// Makes correct filename for deletion
-					String fName;
-					if (s.endsWith(".plp")) {
-						fName = workingDir + "\\" + s;
-					} else {
-						fName = workingDir + "\\" + s + ".plp";
-					}
-
-					File delFile = new File(fName);
-					if (delFile.exists()) {
-						delFile.delete();
-						System.out.println("Deleted playlist: " + s);
-					} else {
-						System.out.println("Couldn't find playlist for deletion: " + delFile.getAbsolutePath());
-					}
-					PlaylistPane.removeItem(po);// Deleting from the table
-				}
-
-			} else {
-				return;
-			}
-
-		}
+		PlaylistPane.DeleteSelectedPlaylists();
 	}
 
 	public static void RenamePlaylist() {
-		PlaylistObject selectedObj = PlaylistPane.getCurrentSelectedItem();
-		if (selectedObj != null) {
-			File playlistFile = new File(workingDir.getAbsolutePath() + "\\" + selectedObj.getName() + ".plp");
-			if (!playlistFile.exists())
-				return;
-
-			TextInputDialog dialog = new TextInputDialog();
-			dialog.setTitle("Playlist name");
-			dialog.setContentText("Enter playlist name: ");
-
-			// Gets input result and loops if filename is not allowed
-			boolean nameLoop = true;
-			Optional<String> result = null;
-			while (nameLoop) {
-				nameLoop = false;
-				result = dialog.showAndWait();
-				if (result.isPresent()) {
-					if (!FileUtils.isNameCorrect(result.get())) {
-						nameLoop = true;
-					}
-				}
-			}
-
-			if (result.isPresent()) {
-				playlistFile.renameTo(new File(playlistFile.getParent() + "\\" + result.get() + ".plp"));
-				PlaylistPane.reloadPlaylists();
-			}
-		}
+		PlaylistPane.DeleteSelectedPlaylists();
 	}
 
 	public static void OpenSelectedPlaylists() {
-		ObservableList<PlaylistObject> list = PlaylistPane.getCurrentSelectedItems();
-		String[] playlistArray = new String[list.size()];
-		for (int i = 0; i < list.size(); i++) {
-			playlistArray[i] = list.get(i).getName();
-		}
-		PlaylistController.openPlaylist(playlistArray, true);
+		PlaylistPane.OpenSelectedPlaylists();
 	}
 
 	public static void RescanSelectedPlaylists() {
-		ObservableList<PlaylistObject> list = PlaylistPane.getCurrentSelectedItems();
-		System.out.println("Selected items: "+list.size());
-		for (PlaylistObject po : list) {
-			System.out.println("Rescanning "+po.getName()+"...");
-			PlaylistWriter.rescanPlaylist(po);
-		}
+		PlaylistPane.RescanSelectedPlaylists();
+
 	}
 }
