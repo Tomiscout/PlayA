@@ -57,14 +57,15 @@ public class FXMediaPlayer {
 			PlaylistController.playNextSong();
 		});
 
-		String ext = FileUtils.getFileExtension(song.getAbsolutePath());
+		//String ext = FileUtils.getFileExtension(song.getAbsolutePath());
 
 		// Sets album art
+		/*
 		if (".mp3".equals(ext)) {
-			MainGui.setAlbumArt(FileUtils.getCoverArtFromMp3File(song));
+			MainGui.setAlbumArt(DataUtils.getCoverArtFromMp3File(song));
 		} else if (".m4a".equals(ext) || ".mp4".equals(ext)) {
-			MainGui.setAlbumArt(FileUtils.getCoverArtFromMp4File(song));
-		}
+			MainGui.setAlbumArt(DataUtils.getCoverArtFromMp4File(song));
+		}*/
 
 		MainGui.scrollToFile(song);
 		MainGui.setSongName(FileUtils.truncateFileType(song.getName()));

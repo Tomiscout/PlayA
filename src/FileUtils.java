@@ -1,42 +1,22 @@
-import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.List;
 
-import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 import javax.swing.filechooser.FileSystemView;
-
-import org.jaudiotagger.audio.AudioFileIO;
-import org.jaudiotagger.audio.exceptions.CannotReadException;
-import org.jaudiotagger.audio.exceptions.InvalidAudioFrameException;
-import org.jaudiotagger.audio.exceptions.ReadOnlyFileException;
-import org.jaudiotagger.audio.mp3.MP3File;
-import org.jaudiotagger.tag.TagException;
-import org.jaudiotagger.tag.id3.AbstractID3v2Tag;
-import org.jaudiotagger.tag.images.Artwork;
-
-import com.coremedia.iso.IsoFile;
-import com.coremedia.iso.boxes.Box;
-import com.coremedia.iso.boxes.MetaBox;
-import com.coremedia.iso.boxes.MovieBox;
-import com.coremedia.iso.boxes.UserDataBox;
-import com.coremedia.iso.boxes.apple.AppleItemListBox;
-import com.googlecode.mp4parser.DirectFileReadDataSource;
-import com.googlecode.mp4parser.boxes.apple.AppleCoverBox;
 
 import javafx.scene.image.Image;
 import javafx.scene.media.Media;
@@ -85,6 +65,15 @@ public class FileUtils {
 
 		}
 		return true;
+	}
+	
+	public static String NormalizeName(String absolutePath) {
+		String name = absolutePath;
+		for(String symbol : forbiddenSymbols){
+			if(!symbol.equals("\\"))
+				name = name.replace(symbol, "");
+		}
+		return name;
 	}
 
 	public static String getFileExtension(String path) {
@@ -287,94 +276,33 @@ public class FileUtils {
 		return null;
 	}
 	
-	//Walks down mp4 structure to get cover art image
-	public static BufferedImage getCoverArtFromMp4File(File f){
-		IsoFile isoFile = null;
-		try {
-			isoFile = new IsoFile(new DirectFileReadDataSource(f));
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+	static public String ExportResource(String resourceName, File folder) throws Exception {
+        InputStream stream = null;
+        OutputStream resStreamOut = null;
+        String outputFile;
+        try {
+            stream = FileUtils.class.getResourceAsStream(resourceName);//note that each / is a directory down in the "jar tree" been the jar the root of the tree
+            if(stream == null) {
+                throw new Exception("Cannot get resource \"" + resourceName + "\" from Jar file.");
+            }
 
-		
-        MovieBox moov = (MovieBox) isoFile.getMovieBox();
-        UserDataBox uData = null;
-        if(moov != null) {
-        	List<Box> boxes = moov.getBoxes();
-        	//Finds UserDataBox
-        	for(Box b : boxes){
-        		if(b instanceof UserDataBox)uData = (UserDataBox)b;
-        	}
+            int readBytes;
+            byte[] buffer = new byte[4096];
+            
+            outputFile = folder.getAbsolutePath() + resourceName.replace("/", "\\");
+            System.out.println("Outputing resource:"+outputFile);
+            resStreamOut = new FileOutputStream(outputFile);
+            while ((readBytes = stream.read(buffer)) > 0) {
+                resStreamOut.write(buffer, 0, readBytes);
+            }
+        } catch (Exception ex) {
+            throw ex;
+        } finally {
+            if(stream != null)stream.close();
+           if(resStreamOut != null)resStreamOut.close();
         }
-		AppleCoverBox cover = null; //CoverArt box
-        if(uData != null){
-        	MetaBox metaBox = (MetaBox) uData.getBoxes().get(0);
-        	if(metaBox != null){
-        		AppleItemListBox ib = null;
-        		List<Box> appleBoxes = metaBox.getBoxes();
-        		
-        		//Finds AppleItemListBox from metadata boxes
-        		for(Box appleBox : appleBoxes){
-        			if(appleBox instanceof AppleItemListBox){
-        				ib = (AppleItemListBox) appleBox;
-        				break;
-        			}
-        		}
-        		
-        		if(ib != null){
-        			List<Box> itemListBox = ib.getBoxes();
-        			//Finds AppleCoverBox from AppleItemListBox boxes
-	            	for(Box b : itemListBox){
-	            		if(b instanceof AppleCoverBox) {
-	            			cover = (AppleCoverBox)b;
-	            			break;
-	            		}
-	            	}
-        		}else{
-        			System.out.println("No AppleItemListBox");
-        		}
-        	}
-        }
-        
-        //If file contains coverArt
-        if(cover != null){
-        	byte[] imageData = cover.getCoverData();
-        	InputStream in = new ByteArrayInputStream(imageData);
-			try {
-				BufferedImage bi = ImageIO.read(in);
-				return bi;
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-        }
-        return null;
-	}
 
-	public static BufferedImage getCoverArtFromMp3File(File f){
-		MP3File mp3;
-		java.awt.Image cover = null;
-		try {
-			mp3 = (MP3File) AudioFileIO.read(f);
-			AbstractID3v2Tag v24tag = mp3.getID3v2TagAsv24();
+        return outputFile;
+    }
 
-			Artwork artWork = null;
-			if (v24tag != null)
-				artWork = v24tag.getFirstArtwork();
-
-			if (artWork != null) {
-				cover = (java.awt.Image) artWork.getImage();
-			} else {
-				System.out.println("No cover art");
-			}
-		} catch (CannotReadException | IOException | TagException | ReadOnlyFileException
-				| InvalidAudioFrameException e) {
-			e.printStackTrace();
-		}
-		
-		if(cover != null){
-			return DataUtils.toBufferedImage(cover);
-		}
-		
-		return null;
-	}
 }

@@ -13,7 +13,6 @@ import javafx.collections.ObservableList;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
@@ -29,11 +28,11 @@ import javafx.scene.image.PixelWriter;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
-import javafx.stage.Stage;
 
 public class MainGui extends HBox {
 
@@ -58,10 +57,6 @@ public class MainGui extends HBox {
 	private static Button shrinkBtn;
 	private static Button shuffleBtn;
 	private static Button repeatBtn;
-
-	
-
-	private static Stage downloaderStage;
 
 	public MainGui() {
 		getStylesheets().add("Vintage.css");
@@ -177,10 +172,6 @@ public class MainGui extends HBox {
 		settingsBtn.setGraphic(new ImageView(FileUtils.getAssetsImage("settings.png")));
 		settingsBtn.setOnAction(e -> {});
 		
-		Button downloaderBtn = new Button();
-		downloaderBtn.setGraphic(new ImageView(FileUtils.getAssetsImage("downloader.png")));
-		downloaderBtn.setOnAction(e -> displayDownloader());
-
 		songLabel = new Label("Sng name");
 		songLabel.setFont(new Font("Impact", 21));
 		songLabel.setOnMouseClicked(e -> {
@@ -204,29 +195,28 @@ public class MainGui extends HBox {
 		songBackground = new ImageView();
 		
 		VBox centerPane = new VBox();
-		HBox seekPane = new HBox();
+		BorderPane seekPane = new BorderPane();
 		StackPane songLayout = new StackPane();
-		HBox songPane = new HBox();
+		BorderPane songPane = new BorderPane();
 		HBox controllPane = new HBox();
 		HBox settingsPane = new HBox();
 		
 		songLayout.setAlignment(Pos.TOP_LEFT);
 		centerPane.setPadding(new Insets(4));
 		centerPane.setSpacing(4);
-		// seekPane.setHgrow(seekPane, Priority.ALWAYS);
-		seekPane.setSpacing(4);
 		seekPane.setPadding(new Insets(0,4,0,4));
-		songPane.setSpacing(264);
-		songPane.setAlignment(Pos.TOP_LEFT);
 		controllPane.setSpacing(2);
 		controllPane.setAlignment(Pos.CENTER_LEFT);
 		settingsPane.setAlignment(Pos.BOTTOM_RIGHT);
 
+		songPane.setLeft(controllPane);
+		songPane.setRight(settingsPane);
+		seekPane.setLeft(seekBar);
+		seekPane.setRight(volumeBar);
+		
 		centerPane.getChildren().addAll(songLabel,songLayout, seekPane, table);
 		songLayout.getChildren().addAll(songBackground, songPane);
-		seekPane.getChildren().addAll(seekBar, volumeBar);
-		songPane.getChildren().addAll(controllPane, settingsPane);
-		settingsPane.getChildren().addAll(downloaderBtn, settingsBtn, shrinkBtn);
+		settingsPane.getChildren().addAll(settingsBtn, shrinkBtn);
 
 		controllPane.getChildren().addAll(previousBtn, playBtn, nextBtn, shuffleBtn, repeatBtn);
 
@@ -284,19 +274,19 @@ public class MainGui extends HBox {
 					table.setVisible(true);
 					
 					shrinkBtn.setGraphic(shrinkLeft);
-					Main.pStage.setHeight(Main.pStage.getHeight() + table.getHeight());
-					Main.pStage.setWidth(Main.pStage.getWidth() + playlistPane.getWidth());
+					PlayA.setHeight(PlayA.pStage.getHeight() + table.getHeight());
+					PlayA.setWidth(PlayA.pStage.getWidth() + playlistPane.getWidth());
 				}else if(shrinkMode==1){ //Hide playlists
 					playlistPane.setManaged(false);
 					playlistPane.setVisible(false);
 					
 					shrinkBtn.setGraphic(shrinkIn);
-					Main.pStage.setWidth(Main.pStage.getWidth() - playlistPane.getWidth());
+					PlayA.pStage.setWidth(PlayA.pStage.getWidth() - playlistPane.getWidth());
 				}else if(shrinkMode==2){ //Compact
 					table.setManaged(false);
 					table.setVisible(false);
 					
-					Main.pStage.setHeight(Main.pStage.getHeight() - table.getHeight());
+					PlayA.pStage.setHeight(PlayA.pStage.getHeight() - table.getHeight());
 					shrinkBtn.setGraphic(shrinkOut);
 				}
 			}
@@ -393,15 +383,6 @@ public class MainGui extends HBox {
 
 			getItems().addAll(itemOpen, itemContainingFolder, itemDelete, itemDeleteFile);
 		}
-	}
-
-	public static void displayDownloader() {
-		downloaderStage = new Stage();
-		YoutubeDownloaderUI ui = new YoutubeDownloaderUI();
-		Scene downloaderScene = new Scene(ui, 512, 512);
-
-		downloaderStage.setScene(downloaderScene);
-		downloaderStage.show();
 	}
 
 	public static void scrollToFile(File song) {

@@ -4,14 +4,42 @@ import java.awt.image.BufferedImage;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.FileNotFoundException;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.channels.FileChannel;
+import java.util.Collections;
+import java.util.List;
 
 import javax.imageio.ImageIO;
 
-import javafx.embed.swing.SwingFXUtils;
+import org.jaudiotagger.audio.AudioFileIO;
+import org.jaudiotagger.audio.exceptions.CannotReadException;
+import org.jaudiotagger.audio.exceptions.InvalidAudioFrameException;
+import org.jaudiotagger.audio.exceptions.ReadOnlyFileException;
+import org.jaudiotagger.audio.mp3.MP3File;
+import org.jaudiotagger.tag.TagException;
+import org.jaudiotagger.tag.id3.AbstractID3v2Tag;
+import org.jaudiotagger.tag.images.Artwork;
+
+import com.coremedia.iso.IsoFile;
+import com.coremedia.iso.boxes.Box;
+import com.coremedia.iso.boxes.Container;
+import com.coremedia.iso.boxes.FileTypeBox;
+import com.coremedia.iso.boxes.HandlerBox;
+import com.coremedia.iso.boxes.MediaBox;
+import com.coremedia.iso.boxes.MetaBox;
+import com.coremedia.iso.boxes.MovieBox;
+import com.coremedia.iso.boxes.TrackBox;
+import com.coremedia.iso.boxes.UserDataBox;
+import com.coremedia.iso.boxes.apple.AppleItemListBox;
+import com.coremedia.iso.boxes.mdat.MediaDataBox;
+import com.googlecode.mp4parser.BasicContainer;
+import com.googlecode.mp4parser.DirectFileReadDataSource;
+import com.googlecode.mp4parser.authoring.Movie;
+import com.googlecode.mp4parser.boxes.apple.AppleCoverBox;
 
 public class DataUtils {
 
@@ -88,4 +116,96 @@ public class DataUtils {
 		// Return the buffered image
 		return bimage;
 	}
+
+	public static BufferedImage getCoverArtFromMp3File(File f) {
+		MP3File mp3;
+		java.awt.Image cover = null;
+		try {
+			mp3 = (MP3File) AudioFileIO.read(f);
+			AbstractID3v2Tag v24tag = mp3.getID3v2TagAsv24();
+
+			Artwork artWork = null;
+			if (v24tag != null)
+				artWork = v24tag.getFirstArtwork();
+
+			if (artWork != null) {
+				cover = (java.awt.Image) artWork.getImage();
+			} else {
+				System.out.println("No cover art");
+			}
+		} catch (CannotReadException | IOException | TagException | ReadOnlyFileException
+				| InvalidAudioFrameException e) {
+			e.printStackTrace();
+		}
+
+		if (cover != null) {
+			return DataUtils.toBufferedImage(cover);
+		}
+
+		return null;
+	}
+
+	// Walks down mp4 structure to get cover art image
+	public static BufferedImage getCoverArtFromMp4File(File f) {
+		IsoFile isoFile = null;
+		try {
+			isoFile = new IsoFile(new DirectFileReadDataSource(f));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		MovieBox moov = (MovieBox) isoFile.getMovieBox();
+		UserDataBox uData = null;
+		if (moov != null) {
+			List<Box> boxes = moov.getBoxes();
+			// Finds UserDataBox
+			for (Box b : boxes) {
+				if (b instanceof UserDataBox)
+					uData = (UserDataBox) b;
+			}
+		}
+		AppleCoverBox cover = null; // CoverArt box
+		if (uData != null) {
+			MetaBox metaBox = (MetaBox) uData.getBoxes().get(0);
+			if (metaBox != null) {
+				AppleItemListBox ib = null;
+				List<Box> appleBoxes = metaBox.getBoxes();
+
+				// Finds AppleItemListBox from metadata boxes
+				for (Box appleBox : appleBoxes) {
+					if (appleBox instanceof AppleItemListBox) {
+						ib = (AppleItemListBox) appleBox;
+						break;
+					}
+				}
+
+				if (ib != null) {
+					List<Box> itemListBox = ib.getBoxes();
+					// Finds AppleCoverBox from AppleItemListBox boxes
+					for (Box b : itemListBox) {
+						if (b instanceof AppleCoverBox) {
+							cover = (AppleCoverBox) b;
+							break;
+						}
+					}
+				} else {
+					System.out.println("No AppleItemListBox");
+				}
+			}
+		}
+
+		// If file contains coverArt
+		if (cover != null) {
+			byte[] imageData = cover.getCoverData();
+			InputStream in = new ByteArrayInputStream(imageData);
+			try {
+				BufferedImage bi = ImageIO.read(in);
+				return bi;
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		return null;
+	}
+
 }
