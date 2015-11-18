@@ -1,3 +1,11 @@
+1.0
+*Complete project restructure
+*Fixed white corner in tableviews
+*Fixed UI elements spacing
+
+0.9
+*Separated youtubedownloadA and playa into two projects
+
 0.8
 *Downloader single video link parsing
 *Youtube channel search
