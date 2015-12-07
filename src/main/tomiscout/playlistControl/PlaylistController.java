@@ -24,7 +24,7 @@ public class PlaylistController {
 		}
 
 		for (String song : songs) {
-			PlaylistWriter.SongObject songObj = PlaylistWriter.parseSongObject(song);
+			PlaylistWriter.SongObject songObj = PlaylistWriter.parseSongObject(song, name);
 			MainGui.table.getData().add(songObj);
 			currentSongs.add(songObj.getFile());
 		}
@@ -55,29 +55,9 @@ public class PlaylistController {
 		} else if (isShuffle) {
 			Random rand = new Random();
 			int randomNum;
-			boolean isSame = false;
-			if (currentSongs.size() > 5) {
-				if (!previousSongs.isEmpty())
-					do {
-						randomNum = rand.nextInt(currentSongs.size());
 
-						int previousLoop = 0;
-						if (previousSongs.size() > 5)
-							previousLoop = previousSongs.size();
-						for (int i = previousSongs.size() - 1; i >= previousLoop; i--) {
-							if (previousSongs.get(i).equals(currentSongs.get(randomNum))) {
-								isSame = true;
-								break;
-							}
-						}
-						System.out.println(isSame);
-					} while (isSame);
-				else {
-					randomNum = rand.nextInt(currentSongs.size());
-				}
-			} else {
-				randomNum = rand.nextInt(currentSongs.size());
-			}
+			randomNum = rand.nextInt(currentSongs.size());
+				
 			File song = currentSongs.get(randomNum);
 			previousSongs.add(song);
 			playSong(song, true);

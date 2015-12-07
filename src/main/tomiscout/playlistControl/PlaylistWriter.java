@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
+import main.tomiscout.ui.MainGui;
 import main.tomiscout.ui.playlist.PlaylistHeader;
 import main.tomiscout.ui.playlist.PlaylistPane;
 import main.tomiscout.ui.playlist.PlaylistPane.PlaylistObject;
@@ -460,6 +461,12 @@ public class PlaylistWriter {
 		}
 		return n;
 	}
+	
+	public static void deleteSongFromPlaylist(SongObject so) {
+		PlaylistWriter.removeLineFromFile(PlaylistWriter.getPlaylistFile(so.getPlaylist()),
+				so.getFile().getAbsolutePath());
+		MainGui.getSongTable().getData().remove(so);
+	}
 
 	public static File getWorkingDir() {
 		File workingDir = new File(FileUtils.getWorkDirectory() + "playlists\\");
@@ -509,7 +516,7 @@ public class PlaylistWriter {
 	}
 	
 
-	public static SongObject parseSongObject(String info){
+	public static SongObject parseSongObject(String info, String playlistName){
 		String[] items = info.split(SONGLINESEPARATOR);
 		
 		if(items.length<2){
@@ -546,7 +553,7 @@ public class PlaylistWriter {
 			
 			//TODO add more song info here
 			
-			return new SongObject(songFile, length);
+			return new SongObject(songFile, length, playlistName);
 		}else{
 			System.out.println("Unallowed audio format:"+songFile.getName());
 		}
@@ -562,12 +569,12 @@ public class PlaylistWriter {
 		private String videoId = "";
 		private String playlist = "";
 		
-		public SongObject(File file, int length){
+		public SongObject(File file, int length, String playlist){
 			this.file = file;
 			if(file == null || !file.exists()) return;
 			this.length = length;
 			lengthString = DataUtils.formatSeconds((long)length, true);
-			//this.playlist = playlist;
+			this.playlist = playlist;
 			this.name = FileUtils.truncateFileType(file.getName());
 		}
 		public SongObject(){

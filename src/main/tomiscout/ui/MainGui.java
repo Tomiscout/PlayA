@@ -1,4 +1,5 @@
 package main.tomiscout.ui;
+
 import java.awt.Desktop;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -89,10 +90,9 @@ public class MainGui extends BorderPane {
 		songLengthLabel = new Label("00:00");
 		songLengthLabel.setFont(new Font(12));
 		BorderPane lengthLabelPane = new BorderPane();
-		lengthLabelPane.setPadding(new Insets(-12,4,0,0));
+		lengthLabelPane.setPadding(new Insets(-12, 4, 0, 0));
 		lengthLabelPane.setRight(songLengthLabel);
 
-		
 		seekBar = new JFXSliderCustom();
 		seekBar.setValue(1.0);
 		seekBar.setMinWidth(400);
@@ -115,7 +115,7 @@ public class MainGui extends BorderPane {
 			FXMediaPlayer.seek(seekBar.getValue());
 			isSeeking = false;
 		});
-		
+
 		StackPane songSeekPane = new StackPane();
 		songSeekPane.getChildren().addAll(lengthLabelPane, seekBar);
 
@@ -137,8 +137,7 @@ public class MainGui extends BorderPane {
 		shuffleOff = new ImageView(FileUtils.getAssetsImage("shuffleOff.png"));
 		repeatOn = new ImageView(FileUtils.getAssetsImage("repeatOn.png"));
 		repeatOff = new ImageView(FileUtils.getAssetsImage("repeatOff.png"));
-		
-		
+
 		// Play
 		playBtn = new Button();
 		playBtn.setGraphic(playImage);
@@ -160,27 +159,25 @@ public class MainGui extends BorderPane {
 		previousBtn.setOnAction(e -> {
 			PlaylistController.playPreviousSong();
 		});
-		
-		
+
 		shuffleBtn = new Button();
 		shuffleBtn.setGraphic(shuffleOn);
 		shuffleBtn.setTooltip(new Tooltip("Shuffle"));
 		shuffleBtn.setOnAction(e -> {
-			if(PlaylistController.toggleShuffle()){
+			if (PlaylistController.toggleShuffle()) {
 				shuffleBtn.setGraphic(shuffleOn);
-			}else{
+			} else {
 				shuffleBtn.setGraphic(shuffleOff);
 			}
 		});
 
-		
 		repeatBtn = new Button();
 		repeatBtn.setGraphic(repeatOff);
 		repeatBtn.setTooltip(new Tooltip("Repeat"));
 		repeatBtn.setOnAction(e -> {
-			if(PlaylistController.toggleRepeat()){
+			if (PlaylistController.toggleRepeat()) {
 				repeatBtn.setGraphic(repeatOn);
-			}else{
+			} else {
 				repeatBtn.setGraphic(repeatOff);
 			}
 		});
@@ -189,23 +186,23 @@ public class MainGui extends BorderPane {
 		searchField.setManaged(false);
 		searchField.setDisable(true);
 		searchField.setOnKeyPressed(key -> {
-				Platform.runLater(new Runnable(){
-					public void run(){
-						searchForSong(searchField.getText());
-					}
-				});
+			Platform.runLater(new Runnable() {
+				public void run() {
+					searchForSong(searchField.getText());
+				}
+			});
 		});
-		
+
 		Button searchBtn = new Button();
 		searchBtn.setGraphic(new ImageView(FileUtils.getAssetsImage("search.png")));
 		searchBtn.setOnAction(a -> {
-			if(searchMode){
+			if (searchMode) {
 				turnOffSearch();
 				searchField.setVisible(false);
 				searchField.setManaged(false);
 				searchField.setDisable(true);
 				searchMode = false;
-			}else{
+			} else {
 				searchField.setVisible(true);
 				searchField.setManaged(true);
 				searchField.setDisable(false);
@@ -214,16 +211,14 @@ public class MainGui extends BorderPane {
 			}
 		});
 		/*
-		Button settingsBtn = new Button();
-		settingsBtn.setGraphic(new ImageView(FileUtils.getAssetsImage("settings.png")));
-		settingsBtn.setOnAction(e -> {});
-		*/
+		 * Button settingsBtn = new Button(); settingsBtn.setGraphic(new
+		 * ImageView(FileUtils.getAssetsImage("settings.png")));
+		 * settingsBtn.setOnAction(e -> {});
+		 */
 		shrinkBtn = new Button();
 		shrinkBtn.setGraphic(shrinkLeft);
 		shrinkBtn.setOnAction(e -> changeShrinkMode());
-		
-		
-		
+
 		songLabel = new Label("Hello!!");
 		songLabel.setFont(new Font("Impact", 21));
 		songLabel.setOnMouseClicked(e -> {
@@ -245,18 +240,18 @@ public class MainGui extends BorderPane {
 		albumCover.setEffect(reflection);
 
 		songBackground = new ImageView();
-		
+
 		VBox centerPane = new VBox();
 		BorderPane seekPane = new BorderPane();
 		StackPane songLayout = new StackPane();
 		BorderPane songPane = new BorderPane();
 		HBox controllPane = new HBox();
 		HBox settingsPane = new HBox();
-		
+
 		songLayout.setAlignment(Pos.TOP_LEFT);
 		centerPane.setPadding(new Insets(4));
 		centerPane.setSpacing(4);
-		seekPane.setPadding(new Insets(0,4,0,4));
+		seekPane.setPadding(new Insets(0, 4, 0, 4));
 		controllPane.setSpacing(2);
 		controllPane.setAlignment(Pos.CENTER_LEFT);
 		settingsPane.setAlignment(Pos.BOTTOM_RIGHT);
@@ -265,8 +260,8 @@ public class MainGui extends BorderPane {
 		songPane.setRight(settingsPane);
 		seekPane.setLeft(songSeekPane);
 		seekPane.setRight(volumeBar);
-		
-		centerPane.getChildren().addAll(songLabel,songLayout, seekPane, table);
+
+		centerPane.getChildren().addAll(songLabel, songLayout, seekPane, table);
 		songLayout.getChildren().addAll(songBackground, songPane);
 		settingsPane.getChildren().addAll(searchField, searchBtn, shrinkBtn);
 
@@ -274,12 +269,12 @@ public class MainGui extends BorderPane {
 
 		playlistPane = new PlaylistPane();
 		playlistPane.setPadding(new Insets(4));
-		
+
 		setCenter(centerPane);
 		setRight(playlistPane);
-		
-		//TODO settings
-		//TODO scrolling background and visuals
+
+		// TODO settings
+		// TODO scrolling background and visuals
 	}
 
 	private static PlaylistWriter.SongObject GetSelectedSong() {
@@ -298,50 +293,54 @@ public class MainGui extends BorderPane {
 		}
 	}
 
-	public static void changePlayImage(boolean b){
-		Platform.runLater(new Runnable(){
+	public static void changePlayImage(boolean b) {
+		Platform.runLater(new Runnable() {
 			@Override
 			public void run() {
-				if(playBtn != null && playImage != null && pauseImage != null){
-					if(b)playBtn.setGraphic(playImage);
-					else playBtn.setGraphic(pauseImage);
+				if (playBtn != null && playImage != null && pauseImage != null) {
+					if (b)
+						playBtn.setGraphic(playImage);
+					else
+						playBtn.setGraphic(pauseImage);
 				}
 			}
 		});
 	}
-	public static void changeShrinkMode(){
-		Platform.runLater(new Runnable(){
+
+	public static void changeShrinkMode() {
+		Platform.runLater(new Runnable() {
 			@Override
 			public void run() {
 				shrinkMode++;
-				if(shrinkMode>2) shrinkMode = 0;
-				
-				if(shrinkMode==0){
+				if (shrinkMode > 2)
+					shrinkMode = 0;
+
+				if (shrinkMode == 0) {
 					playlistPane.setManaged(true);
 					playlistPane.setVisible(true);
 					table.setManaged(true);
 					table.setVisible(true);
-					
+
 					shrinkBtn.setGraphic(shrinkLeft);
 					PlayA.setHeight(PlayA.pStage.getHeight() + table.getHeight());
 					PlayA.setWidth(PlayA.pStage.getWidth() + playlistPane.getWidth());
-				}else if(shrinkMode==1){ //Hide playlists
+				} else if (shrinkMode == 1) { // Hide playlists
 					playlistPane.setManaged(false);
 					playlistPane.setVisible(false);
-					
+
 					shrinkBtn.setGraphic(shrinkIn);
 					PlayA.setWidth(PlayA.pStage.getWidth() - playlistPane.getWidth());
-				}else if(shrinkMode==2){ //Compact
+				} else if (shrinkMode == 2) { // Compact
 					table.setManaged(false);
 					table.setVisible(false);
-					
+
 					PlayA.setHeight(PlayA.pStage.getHeight() - table.getHeight());
 					shrinkBtn.setGraphic(shrinkOut);
 				}
 			}
 		});
 	}
-	
+
 	public static void setSongName(String s) {
 		songLabel.setText(s);
 	}
@@ -349,12 +348,6 @@ public class MainGui extends BorderPane {
 	public static void setSeekValue(double d) {
 		if (!isSeeking)
 			seekBar.setValue(d);
-	}
-
-	private static void deleteSongFromPlaylist(PlaylistWriter.SongObject po) {
-		PlaylistWriter.removeLineFromFile(PlaylistWriter.getPlaylistFile(po.getPlaylist()),
-				po.getFile().getAbsolutePath());
-		table.getData().remove(po);
 	}
 
 	public static SongTable getSongTable() {
@@ -399,7 +392,7 @@ public class MainGui extends BorderPane {
 				Optional<ButtonType> result = alert.showAndWait();
 
 				if (result.get() == ButtonType.OK) {
-					deleteSongFromPlaylist(GetSelectedSong());
+					PlaylistWriter.deleteSongFromPlaylist(GetSelectedSong());
 				}
 			});
 
@@ -415,16 +408,17 @@ public class MainGui extends BorderPane {
 
 				if (result.get() == ButtonType.OK) {
 					for (PlaylistWriter.SongObject so : list) {
-						try {
-							File songFile = so.getFile();
-							if (FXMediaPlayer.getCurrentSong().equals(so.getFile()))
-								FXMediaPlayer.dispose();
-							Files.delete(songFile.toPath());
-						} catch (IOException ioe) {
+						File songFile = so.getFile();
+						File currentSong = FXMediaPlayer.getCurrentSong();
+						if (currentSong != null && currentSong.equals(so.getFile()))
+							FXMediaPlayer.dispose();
+						
+						if (!songFile.delete()) {
 							System.out.println("File is already in use, can't delete!");
 							so.getFile().deleteOnExit();
 						}
-						deleteSongFromPlaylist(so);
+						
+						PlaylistWriter.deleteSongFromPlaylist(so);
 						System.out.println("Deleted " + so.getFile().getAbsolutePath());
 					}
 				}
@@ -473,21 +467,23 @@ public class MainGui extends BorderPane {
 			// songBackground.setImage(wr);
 		}
 	}
-	
-	public static void searchForSong(String text){
+
+	public static void searchForSong(String text) {
 		searchList.clear();
-		for(PlaylistWriter.SongObject so : table.getData()){
-			if(so.getName().toLowerCase().contains(text)){
+		for (PlaylistWriter.SongObject so : table.getData()) {
+			if (so.getName().toLowerCase().contains(text)) {
 				searchList.add(so);
 			}
 		}
 		table.setList(searchList);
 	}
-	public static void turnOffSearch(){
+
+	public static void turnOffSearch() {
 		table.resetList();
 		searchList.clear();
 	}
-	public static void setSongLengthLabel(long length){
+
+	public static void setSongLengthLabel(long length) {
 		songLengthLabel.setText(DataUtils.formatSeconds(length, false));
 	}
 }
