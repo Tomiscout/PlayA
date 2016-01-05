@@ -29,6 +29,7 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import main.tomiscout.playlistControl.PlaylistController;
 import main.tomiscout.playlistControl.PlaylistWriter;
+import main.tomiscout.ui.MainGui;
 import main.tomiscout.utils.FileUtils;
 
 public class PlaylistPane extends BorderPane {
@@ -165,14 +166,14 @@ public class PlaylistPane extends BorderPane {
 		if (folders <= 1) {
 			PlaylistCreationData data = displayPlaylistCreation(fileList.get(0).getName(), false);
 			if (data.isFinished()) {
-				PlaylistWriter.createPlaylist(data.getName(), filesArray);
+				PlaylistWriter.createPlaylist(data.getName(), filesArray, true);
 			}
 		} else {
 			// Display options window
 			PlaylistCreationData data = displayPlaylistCreation("", true);
 			if (data.isFinished()) {
 				if (data.getRadio()) {
-					PlaylistWriter.createPlaylist(data.getName(), filesArray);
+					PlaylistWriter.createPlaylist(data.getName(), filesArray, true);
 				} else {
 					PlaylistWriter.createFolderPlaylists(filesArray);
 				}
@@ -325,6 +326,7 @@ public class PlaylistPane extends BorderPane {
 			playlistArray[i] = list.get(i).getName();
 		}
 		PlaylistController.openPlaylist(playlistArray, true);
+		MainGui.getSongTable().scrollTo(0);
 	}
 	
 	public static void DeleteSelectedPlaylists() {

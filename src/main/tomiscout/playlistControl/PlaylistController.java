@@ -25,8 +25,10 @@ public class PlaylistController {
 
 		for (String song : songs) {
 			PlaylistWriter.SongObject songObj = PlaylistWriter.parseSongObject(song, name);
-			MainGui.table.getData().add(songObj);
-			currentSongs.add(songObj.getFile());
+			if(songObj != null){
+				MainGui.table.getData().add(songObj);
+				currentSongs.add(songObj.getFile());
+			}
 		}
 
 	}

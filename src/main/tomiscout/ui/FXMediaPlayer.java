@@ -8,6 +8,7 @@ import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import javafx.util.Duration;
 import main.tomiscout.playlistControl.PlaylistController;
+import main.tomiscout.utils.DataUtils;
 import main.tomiscout.utils.FileUtils;
 
 public class FXMediaPlayer {
@@ -25,7 +26,7 @@ public class FXMediaPlayer {
 			return;
 		}
 		// Checks if file exists
-		if (!song.exists()) {
+		if (song != null && !song.exists()) {
 			System.out.println("Song doesn't exist! " + song.getAbsolutePath());
 			return;
 		}
@@ -59,17 +60,8 @@ public class FXMediaPlayer {
 		player.setOnEndOfMedia(() -> {
 			PlaylistController.playNextSong();
 		});
-
-		//String ext = FileUtils.getFileExtension(song.getAbsolutePath());
-
-		// Sets album art
-		/*
-		if (".mp3".equals(ext)) {
-			MainGui.setAlbumArt(DataUtils.getCoverArtFromMp3File(song));
-		} else if (".m4a".equals(ext) || ".mp4".equals(ext)) {
-			MainGui.setAlbumArt(DataUtils.getCoverArtFromMp4File(song));
-		}*/
-		
+	
+		MainGui.setAlbumArt(DataUtils.getCoverArt(song));
 		MainGui.setSongLengthLabel(FileUtils.getSongLength(song));
 
 		MainGui.scrollToFile(song);
@@ -121,7 +113,8 @@ public class FXMediaPlayer {
 	public static void setVolume(double d) {
 		Volume = d;
 		if (!isNull()) {
-			player.setVolume(d);
+			double vol = d*(2.0/3)+(1.0/3)-0.001;
+			player.setVolume(Math.exp(6.908*vol)/1000);
 		}
 	}
 

@@ -3,8 +3,6 @@ package main.tomiscout.ui;
 import java.awt.Desktop;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.util.Optional;
 
 import com.jfoenix.controls.JFXSlider;
@@ -237,41 +235,52 @@ public class MainGui extends BorderPane {
 		albumCover.setFitHeight(80);
 		albumCover.setPreserveRatio(true);
 		albumCover.setSmooth(true);
-		albumCover.setEffect(reflection);
+		//albumCover.setEffect(reflection);
+		
 
 		songBackground = new ImageView();
 
-		VBox centerPane = new VBox();
+		HBox topPane = new HBox();
+		VBox controlPane = new VBox();
 		BorderPane seekPane = new BorderPane();
-		StackPane songLayout = new StackPane();
+		StackPane buttonLayout = new StackPane();
 		BorderPane songPane = new BorderPane();
-		HBox controllPane = new HBox();
+		HBox buttonsPane = new HBox();
 		HBox settingsPane = new HBox();
 
-		songLayout.setAlignment(Pos.TOP_LEFT);
-		centerPane.setPadding(new Insets(4));
-		centerPane.setSpacing(4);
+		buttonLayout.setAlignment(Pos.TOP_LEFT);
+		controlPane.setPadding(new Insets(4));
+		controlPane.setSpacing(4);
 		seekPane.setPadding(new Insets(0, 4, 0, 4));
-		controllPane.setSpacing(2);
-		controllPane.setAlignment(Pos.CENTER_LEFT);
+		buttonsPane.setSpacing(2);
+		buttonsPane.setAlignment(Pos.CENTER_LEFT);
 		settingsPane.setAlignment(Pos.BOTTOM_RIGHT);
 
-		songPane.setLeft(controllPane);
+		songPane.setLeft(buttonsPane);
 		songPane.setRight(settingsPane);
 		seekPane.setLeft(songSeekPane);
 		seekPane.setRight(volumeBar);
+		
+		StackPane albumPane = new StackPane(albumCover);
+		albumPane.setPadding(new Insets(4));
 
-		centerPane.getChildren().addAll(songLabel, songLayout, seekPane, table);
-		songLayout.getChildren().addAll(songBackground, songPane);
+		controlPane.getChildren().addAll(songLabel, buttonLayout, seekPane);
+		buttonLayout.getChildren().addAll(songBackground, songPane);
 		settingsPane.getChildren().addAll(searchField, searchBtn, shrinkBtn);
+		topPane.getChildren().addAll(controlPane, albumPane);
+		topPane.setSpacing(4);
 
-		controllPane.getChildren().addAll(previousBtn, playBtn, nextBtn, shuffleBtn, repeatBtn);
+		buttonsPane.getChildren().addAll(previousBtn, playBtn, nextBtn, shuffleBtn, repeatBtn);
 
 		playlistPane = new PlaylistPane();
 		playlistPane.setPadding(new Insets(4));
 
-		setCenter(centerPane);
+		StackPane tablePane = new StackPane(table);
+		tablePane.setPadding(new Insets(4));
+
+		setCenter(tablePane);
 		setRight(playlistPane);
+		setTop(topPane);
 
 		// TODO settings
 		// TODO scrolling background and visuals
@@ -412,12 +421,12 @@ public class MainGui extends BorderPane {
 						File currentSong = FXMediaPlayer.getCurrentSong();
 						if (currentSong != null && currentSong.equals(so.getFile()))
 							FXMediaPlayer.dispose();
-						
+
 						if (!songFile.delete()) {
 							System.out.println("File is already in use, can't delete!");
 							so.getFile().deleteOnExit();
 						}
-						
+
 						PlaylistWriter.deleteSongFromPlaylist(so);
 						System.out.println("Deleted " + so.getFile().getAbsolutePath());
 					}
@@ -438,7 +447,8 @@ public class MainGui extends BorderPane {
 				break;
 			}
 		}
-		if (vIndex > -1) {
+		if (vIndex >= 0) {
+
 			table.scrollTo(vIndex);
 			table.getSelectionModel().select(vIndex);
 		}
@@ -453,18 +463,20 @@ public class MainGui extends BorderPane {
 
 	public static void setAlbumArt(BufferedImage bi) {
 		if (albumCover != null) {
-			WritableImage wr = null;
 			if (bi != null) {
-				wr = new WritableImage(bi.getWidth(), bi.getHeight());
+				WritableImage wr = new WritableImage(bi.getWidth(), bi.getHeight());
 				PixelWriter pw = wr.getPixelWriter();
 				for (int x = 0; x < bi.getWidth(); x++) {
 					for (int y = 0; y < bi.getHeight(); y++) {
 						pw.setArgb(x, y, bi.getRGB(x, y));
 					}
 				}
+
+				albumCover.setImage(wr);
+				// songBackground.setImage(wr);
+			} else {
+				albumCover.setImage(null);
 			}
-			albumCover.setImage(wr);
-			// songBackground.setImage(wr);
 		}
 	}
 

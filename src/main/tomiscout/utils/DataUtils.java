@@ -31,8 +31,10 @@ import com.coremedia.iso.boxes.apple.AppleItemListBox;
 import com.googlecode.mp4parser.DirectFileReadDataSource;
 import com.googlecode.mp4parser.boxes.apple.AppleCoverBox;
 
-public class DataUtils {
+import javafx.embed.swing.SwingFXUtils;
 
+public class DataUtils {
+	
 	public static String formatSeconds(long s, boolean letters) {
 		String string = "";
 
@@ -120,8 +122,6 @@ public class DataUtils {
 
 			if (artWork != null) {
 				cover = (java.awt.Image) artWork.getImage();
-			} else {
-				System.out.println("No cover art");
 			}
 		} catch (CannotReadException | IOException | TagException | ReadOnlyFileException
 				| InvalidAudioFrameException e) {
@@ -195,6 +195,34 @@ public class DataUtils {
 				e.printStackTrace();
 			}
 		}
+		return null;
+	}
+	
+	
+	static final String[] coverArtNames = {"cover.jpg", "Cover.jpg", "cover.png", "Cover.png", "AlbumArt.jpg", "AlbumArt.png"};
+	public static BufferedImage getCoverArt(File song) {
+		//Firstly gets art from file
+		BufferedImage bi = null;
+		String ext = FileUtils.getFileExtension(song.getAbsolutePath());
+		if (".mp3".equals(ext)) {
+			bi = DataUtils.getCoverArtFromMp3File(song);
+		} else if (".m4a".equals(ext) || ".mp4".equals(ext)) {
+			bi = DataUtils.getCoverArtFromMp4File(song);
+		}
+		
+		if(bi != null) return bi;
+		else{
+			//Else gets cover art from file
+			String parent = song.getParent()+"\\";
+			for(String name : coverArtNames){
+				File coverFile = new File(parent+name);
+				if(coverFile.exists()){
+					javafx.scene.image.Image image = new javafx.scene.image.Image(coverFile.toURI().toString());
+					return SwingFXUtils.fromFXImage(image, null);
+				}
+			}
+		}
+		
 		return null;
 	}
 
