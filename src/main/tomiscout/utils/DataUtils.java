@@ -1,6 +1,7 @@
 package main.tomiscout.utils;
 import java.awt.Graphics2D;
 import java.awt.Image;
+import java.awt.datatransfer.ClipboardOwner;
 import java.awt.image.BufferedImage;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;

@@ -1,8 +1,14 @@
 package main.tomiscout.ui;
 
 import java.awt.Desktop;
+import java.awt.Toolkit;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.ClipboardOwner;
+import java.awt.datatransfer.StringSelection;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.net.URI;
+import java.net.URLEncoder;
 import java.util.Optional;
 
 import com.jfoenix.controls.JFXSlider;
@@ -41,9 +47,11 @@ import main.tomiscout.playlistControl.PlaylistWriter;
 import main.tomiscout.ui.playlist.PlaylistPane;
 import main.tomiscout.utils.DataUtils;
 import main.tomiscout.utils.FileUtils;
+import main.tomiscout.utils.TextTransfer;
 
 public class MainGui extends BorderPane {
 
+	final String youtubeQuerry = "https://www.youtube.com/results?search_query=";
 	static PlaylistPane playlistPane;
 	static JFXSliderCustom seekBar;
 	public static SongTable table;
@@ -72,8 +80,24 @@ public class MainGui extends BorderPane {
 	public MainGui() {
 		getStylesheets().add("main/tomiscout/resources/css/Vintage.css");
 
+		LabelContextMenu labelContext = new LabelContextMenu();
 		SongContextMenu songContext = new SongContextMenu();
 
+		songLabel = new Label("Hello!!");
+		songLabel.setFont(new Font("Impact", 21));
+		songLabel.setOnMouseClicked(e -> {
+			if (e.getButton().equals(MouseButton.PRIMARY)) {
+				if (e.getClickCount() == 2) {
+					scrollToFile(PlaylistController.currentSong);
+				}
+			}else if(e.getButton().equals(MouseButton.SECONDARY)){
+				labelContext.show(songLabel, e.getScreenX(), e.getScreenY());
+			}else{
+				labelContext.hide();
+			}
+		});// scrolls to song if doubleclicked song label
+
+		
 		// TableView
 		table = new SongTable();
 		table.setOnMousePressed(e -> {
@@ -83,6 +107,8 @@ public class MainGui extends BorderPane {
 				songContext.hide();
 			}
 		});
+		
+		
 
 		// Slider
 		songLengthLabel = new Label("00:00");
@@ -217,16 +243,6 @@ public class MainGui extends BorderPane {
 		shrinkBtn.setGraphic(shrinkLeft);
 		shrinkBtn.setOnAction(e -> changeShrinkMode());
 
-		songLabel = new Label("Hello!!");
-		songLabel.setFont(new Font("Impact", 21));
-		songLabel.setOnMouseClicked(e -> {
-			if (e.getButton().equals(MouseButton.PRIMARY)) {
-				if (e.getClickCount() == 2) {
-					scrollToFile(PlaylistController.currentSong);
-				}
-			}
-		});// scrolls to song if doubleclicked song label
-
 		Reflection reflection = new Reflection();
 		reflection.setFraction(0.2);
 
@@ -235,8 +251,7 @@ public class MainGui extends BorderPane {
 		albumCover.setFitHeight(80);
 		albumCover.setPreserveRatio(true);
 		albumCover.setSmooth(true);
-		//albumCover.setEffect(reflection);
-		
+		// albumCover.setEffect(reflection);
 
 		songBackground = new ImageView();
 
@@ -260,7 +275,7 @@ public class MainGui extends BorderPane {
 		songPane.setRight(settingsPane);
 		seekPane.setLeft(songSeekPane);
 		seekPane.setRight(volumeBar);
-		
+
 		StackPane albumPane = new StackPane(albumCover);
 		albumPane.setPadding(new Insets(4));
 
@@ -364,6 +379,35 @@ public class MainGui extends BorderPane {
 	}
 
 	// ContextMenu classes
+	public class LabelContextMenu extends ContextMenu {
+		public LabelContextMenu() {
+			MenuItem itemCopy = new MenuItem("Copy");
+			MenuItem itemSearch = new MenuItem("Youtube search");
+			MenuItem itemGoto = new MenuItem("Go to...");
+
+			itemCopy.setOnAction(e -> {
+				TextTransfer tf = new TextTransfer();
+				tf.setClipboardContents(songLabel.getText());
+			});
+			
+			itemSearch.setOnAction(e -> {
+				if(Desktop.isDesktopSupported()){
+					try {
+						Desktop.getDesktop().browse(new URI(youtubeQuerry+ URLEncoder.encode(songLabel.getText(), "UTF-8").replace("+", "%20")));
+					} catch (Exception e1) {
+						e1.printStackTrace();
+					}
+				}
+			});
+			
+			itemGoto.setOnAction(e -> {
+				scrollToFile(PlaylistController.currentSong);
+			});
+
+			getItems().addAll(itemCopy, itemSearch, itemGoto);
+		}
+	}
+
 	public class SongContextMenu extends ContextMenu {
 		public SongContextMenu() {
 			Alert alert = new Alert(AlertType.CONFIRMATION);

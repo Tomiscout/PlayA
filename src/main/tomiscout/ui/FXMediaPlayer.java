@@ -111,10 +111,10 @@ public class FXMediaPlayer {
 	}
 
 	public static void setVolume(double d) {
-		Volume = d;
 		if (!isNull()) {
 			double vol = d*(2.0/3)+(1.0/3)-0.001;
-			player.setVolume(Math.exp(6.908*vol)/1000);
+			Volume = Math.exp(6.908*vol)/1000;
+			player.setVolume(Volume);
 		}
 	}
 
