@@ -200,7 +200,7 @@ public class DataUtils {
 	}
 	
 	
-	static final String[] coverArtNames = {"cover.jpg", "Cover.jpg", "cover.png", "Cover.png", "AlbumArt.jpg", "AlbumArt.png"};
+	static final String[] coverArtNames = {"cover.jpg", "Cover.jpg", "cover.png", "Cover.png", "AlbumArt.jpg", "AlbumArt.png", "folder.jpg", "folder.png"};
 	public static BufferedImage getCoverArt(File song) {
 		//Firstly gets art from file
 		BufferedImage bi = null;

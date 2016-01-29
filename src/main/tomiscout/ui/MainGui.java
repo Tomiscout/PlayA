@@ -42,6 +42,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
 import main.tomiscout.PlayA;
+import main.tomiscout.player.FXMediaPlayer;
 import main.tomiscout.playlistControl.PlaylistController;
 import main.tomiscout.playlistControl.PlaylistWriter;
 import main.tomiscout.ui.playlist.PlaylistPane;
@@ -53,7 +54,7 @@ public class MainGui extends BorderPane {
 
 	final String youtubeQuerry = "https://www.youtube.com/results?search_query=";
 	static PlaylistPane playlistPane;
-	static JFXSliderCustom seekBar;
+	public static JFXSliderCustom seekBar;
 	public static SongTable table;
 	static Label songLabel = null;
 	static Label songLengthLabel = null;

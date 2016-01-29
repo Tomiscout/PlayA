@@ -3,7 +3,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Random;
 
-import main.tomiscout.ui.FXMediaPlayer;
+import main.tomiscout.player.FXMediaPlayer;
 import main.tomiscout.ui.MainGui;
 import main.tomiscout.ui.playlist.PlaylistPane;
 

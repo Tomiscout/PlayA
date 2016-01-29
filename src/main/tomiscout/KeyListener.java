@@ -2,7 +2,7 @@ package main.tomiscout;
 import com.melloware.jintellitype.IntellitypeListener;
 import com.melloware.jintellitype.JIntellitype;
 
-import main.tomiscout.ui.FXMediaPlayer;
+import main.tomiscout.player.FXMediaPlayer;
 
 public class KeyListener implements IntellitypeListener{
 	

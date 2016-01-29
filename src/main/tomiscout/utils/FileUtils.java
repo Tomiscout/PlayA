@@ -36,12 +36,12 @@ public class FileUtils {
 	static String[] forbiddenSymbols = { "/", "\\", "?", "*", ":", "|", "\"", "<", ">" };
 	static String[] forbiddenNames = { "CON", "PRN", "AUX", "CLOCK$", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5",
 			"COM6", "COM7", "COM8", "COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9", };
-	public static String[] supportedAudioFormats = { ".mp3", ".m4a", ".waw", ".ogg" };
+	public static String[] supportedAudioFormats = { ".mp3", ".m4a", ".waw", ".aiff" };
 	static ImageIcon[] rootIcons = new ImageIcon[2];
 	static final String RESOURCESFOLDER = "/main/tomiscout/resources/";
 	static FileSystemView fsv = FileSystemView.getFileSystemView();
 	private static String workingDir = System.getenv("APPDATA") + "\\Tomiscout\\PlayA\\";
-
+	
 	public static String getWorkDirectory() {
 		return workingDir;
 	}

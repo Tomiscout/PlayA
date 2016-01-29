@@ -1,4 +1,4 @@
-package main.tomiscout.ui;
+package main.tomiscout.player;
 import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -8,6 +8,7 @@ import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import javafx.util.Duration;
 import main.tomiscout.playlistControl.PlaylistController;
+import main.tomiscout.ui.MainGui;
 import main.tomiscout.utils.DataUtils;
 import main.tomiscout.utils.FileUtils;
 
